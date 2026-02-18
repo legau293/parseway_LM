@@ -1,10 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,14 +8,13 @@ const AuthForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
-  // Redirect to dashboard if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('User is authenticated, redirecting to dashboard');
       navigate('/', { replace: true });
     }
   }, [isAuthenticated, navigate]);
@@ -30,15 +24,12 @@ const AuthForm = () => {
     setLoading(true);
 
     try {
-      console.log('Attempting sign in for:', email);
-      
       const { error, data } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      
+
       if (error) {
-        console.error('Sign in error:', error);
         if (error.message.includes('Invalid login credentials')) {
           throw new Error('Invalid email or password. Please check your credentials and try again.');
         } else if (error.message.includes('Email not confirmed')) {
@@ -47,67 +38,139 @@ const AuthForm = () => {
           throw error;
         }
       }
-      
-      console.log('Sign in successful:', data.user?.email);
-      
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully signed in.",
-      });
 
-      // The AuthContext will handle the redirect automatically
-      
-    } catch (error: any) {
-      console.error('Auth form error:', error);
       toast({
-        title: "Sign In Error",
+        title: 'Welcome back!',
+        description: 'You have successfully signed in.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Sign in failed',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
   };
 
+  const inputStyle = (field: string): React.CSSProperties => ({
+    width: '100%',
+    padding: '10px 14px',
+    borderRadius: '8px',
+    border: `1.5px solid ${focusedField === field ? '#2DB7A3' : '#E2E8F0'}`,
+    outline: 'none',
+    fontSize: '14px',
+    color: '#0F172A',
+    backgroundColor: '#FFFFFF',
+    fontFamily: "'Inter', system-ui, sans-serif",
+    fontWeight: 400,
+    transition: 'border-color 0.15s ease',
+    boxShadow: focusedField === field ? '0 0 0 3px rgba(45,183,163,0.12)' : 'none',
+  });
+
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>Sign In</CardTitle>
-        <CardDescription>
-          Enter your credentials to access your notebooks
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="Enter your email"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="Enter your password"
-              minLength={6}
-            />
-          </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Signing In...' : 'Sign In'}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+    <div className="w-full" style={{ maxWidth: '400px' }}>
+      <div className="mb-8 text-center">
+        <h1
+          className="font-medium mb-2"
+          style={{ fontSize: '28px', color: '#0F172A', lineHeight: 1.2 }}
+        >
+          Sign in to parseway
+        </h1>
+        <p style={{ fontSize: '15px', color: '#475569' }}>
+          Enter your credentials to access your account
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <label
+            htmlFor="email"
+            style={{
+              fontSize: '14px',
+              fontWeight: 500,
+              color: '#0F172A',
+              fontFamily: "'Inter', system-ui, sans-serif",
+            }}
+          >
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onFocus={() => setFocusedField('email')}
+            onBlur={() => setFocusedField(null)}
+            required
+            placeholder="you@example.com"
+            style={inputStyle('email')}
+            autoComplete="email"
+          />
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <label
+            htmlFor="password"
+            style={{
+              fontSize: '14px',
+              fontWeight: 500,
+              color: '#0F172A',
+              fontFamily: "'Inter', system-ui, sans-serif",
+            }}
+          >
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onFocus={() => setFocusedField('password')}
+            onBlur={() => setFocusedField(null)}
+            required
+            placeholder="••••••••"
+            minLength={6}
+            style={inputStyle('password')}
+            autoComplete="current-password"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: '100%',
+            padding: '11px 20px',
+            borderRadius: '8px',
+            border: 'none',
+            backgroundColor: loading ? '#E2E8F0' : '#2DB7A3',
+            color: loading ? '#94A3B8' : '#FFFFFF',
+            fontSize: '15px',
+            fontWeight: 500,
+            fontFamily: "'Inter', system-ui, sans-serif",
+            cursor: loading ? 'not-allowed' : 'pointer',
+            transition: 'background-color 0.15s ease',
+            marginTop: '4px',
+          }}
+          onMouseEnter={(e) => {
+            if (!loading) e.currentTarget.style.backgroundColor = '#1A8F7E';
+          }}
+          onMouseLeave={(e) => {
+            if (!loading) e.currentTarget.style.backgroundColor = '#2DB7A3';
+          }}
+          onMouseDown={(e) => {
+            if (!loading) e.currentTarget.style.backgroundColor = '#0E6B5E';
+          }}
+          onMouseUp={(e) => {
+            if (!loading) e.currentTarget.style.backgroundColor = '#1A8F7E';
+          }}
+        >
+          {loading ? 'Signing in...' : 'Sign in'}
+        </button>
+      </form>
+    </div>
   );
 };
 

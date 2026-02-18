@@ -16,10 +16,7 @@ const DashboardHeader = ({ userEmail }: DashboardHeaderProps) => {
   return (
     <header className="bg-white px-6 py-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Logo />
-          <h1 className="text-xl font-medium text-gray-900">InsightsLM</h1>
-        </div>
+        <Logo size="md" />
         
         <div className="flex items-center space-x-4">
           <DropdownMenu>
