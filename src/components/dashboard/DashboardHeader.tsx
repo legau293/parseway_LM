@@ -22,7 +22,7 @@ const DashboardHeader = ({ userEmail }: DashboardHeaderProps) => {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="p-0">
-                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-purple-600 transition-colors">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors" style={{ backgroundColor: '#2DB7A3' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1A8F7E')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2DB7A3')}>
                   <User className="h-4 w-4 text-white" />
                 </div>
               </Button>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -22,10 +23,10 @@ const Logo = ({ size = 'md', showText = true, className = '' }: LogoProps) => {
   };
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <Link to="/" className={`flex items-center gap-2 ${className}`} style={{ textDecoration: 'none' }}>
       <img
-        src="/ChatGPT_Image_Feb_15,_2026,_04_41_31_PM.png"
-        alt="parseway"
+        src="/parseway_logo.png"
+        alt="Parseway"
         className={`${iconSizes[size]} object-contain`}
         style={{ background: 'transparent' }}
       />
@@ -43,7 +44,7 @@ const Logo = ({ size = 'md', showText = true, className = '' }: LogoProps) => {
           <span style={{ color: '#E5483F' }}>way</span>
         </span>
       )}
-    </div>
+    </Link>
   );
 };
 

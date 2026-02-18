@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { User, LogOut } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useNotebookUpdate } from '@/hooks/useNotebookUpdate';
 import {
   DropdownMenu,
@@ -19,7 +18,6 @@ interface NotebookHeaderProps {
 }
 
 const NotebookHeader = ({ title, notebookId }: NotebookHeaderProps) => {
-  const navigate = useNavigate();
   const { logout } = useLogout();
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(title);
@@ -55,21 +53,12 @@ const NotebookHeader = ({ title, notebookId }: NotebookHeaderProps) => {
     handleTitleSubmit();
   };
 
-  const handleIconClick = () => {
-    navigate('/');
-  };
-
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <button 
-              onClick={handleIconClick}
-              className="hover:bg-gray-50 rounded transition-colors p-1"
-            >
-              <Logo />
-            </button>
+            <Logo />
             {isEditing ? (
               <Input
                 value={editedTitle}
@@ -96,7 +85,7 @@ const NotebookHeader = ({ title, notebookId }: NotebookHeaderProps) => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="p-0">
-                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-purple-600 transition-colors">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors" style={{ backgroundColor: '#2DB7A3' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1A8F7E')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2DB7A3')}>
                     <User className="h-4 w-4 text-white" />
                   </div>
                 </Button>

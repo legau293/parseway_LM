@@ -70,18 +70,33 @@ const AuthForm = () => {
   });
 
   return (
-    <div className="w-full" style={{ maxWidth: '400px' }}>
-      <div className="mb-8 text-center">
-        <h1
-          className="font-medium mb-2"
-          style={{ fontSize: '28px', color: '#0F172A', lineHeight: 1.2 }}
-        >
-          Sign in to parseway
-        </h1>
-        <p style={{ fontSize: '15px', color: '#475569' }}>
-          Enter your credentials to access your account
-        </p>
-      </div>
+    <div className="w-full" style={{ maxWidth: '420px' }}>
+      <div
+        style={{
+          backgroundColor: '#FFFFFF',
+          border: '1px solid #E2E8F0',
+          borderRadius: '16px',
+          padding: '40px',
+          boxShadow: '0 4px 24px rgba(15,23,42,0.06)',
+        }}
+      >
+        <div className="mb-8 text-center">
+          <p
+            className="font-medium tracking-widest uppercase mb-3"
+            style={{ fontSize: '11px', color: '#2DB7A3', letterSpacing: '0.12em' }}
+          >
+            Välkommen tillbaka
+          </p>
+          <h1
+            className="font-medium mb-2"
+            style={{ fontSize: '26px', color: '#0F172A', lineHeight: 1.2 }}
+          >
+            Sign in to parseway
+          </h1>
+          <p style={{ fontSize: '14px', color: '#475569' }}>
+            Enter your credentials to access your account
+          </p>
+        </div>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -170,6 +185,18 @@ const AuthForm = () => {
           {loading ? 'Signing in...' : 'Sign in'}
         </button>
       </form>
+      </div>
+
+      <div className="mt-6 text-center">
+        <a
+          href="/"
+          style={{ fontSize: '13px', color: '#475569', textDecoration: 'none', transition: 'color 0.15s ease' }}
+          onMouseEnter={e => (e.currentTarget.style.color = '#2DB7A3')}
+          onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
+        >
+          &larr; Back to homepage
+        </a>
+      </div>
     </div>
   );
 };
