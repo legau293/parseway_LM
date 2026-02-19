@@ -203,7 +203,7 @@ const Landing = () => {
               className="font-medium leading-tight"
               style={{ fontSize: 'clamp(2.25rem, 5vw, 3.5rem)', color: '#0F172A', lineHeight: 1.12 }}
             >
-              Från kaos till klarhet. Direkt.
+              Från kaos till klarhet.
             </h1>
             <p
               className="leading-relaxed"
