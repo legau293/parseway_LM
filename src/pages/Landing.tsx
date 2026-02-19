@@ -103,12 +103,12 @@ const PipelineStepCard = ({
 );
 
 const OUTCOMES = [
-  'Mindre manuellt och repetitivt arbete',
-  'Snabbare framtagning av rätt information',
-  'Standardiserade och återanvändbara mallar',
-  'Strukturerad och begriplig data',
-  'Stabila och förutsägbara flöden',
-  'Full spårbarhet från källa till beslut',
+  'Mindre letande',
+  'Snabbare svar',
+  'Samma format. Varje gång.',
+  'Information du kan lita på',
+  'Inga överraskningar',
+  'Full spårbarhet',
 ];
 
 const Landing = () => {
@@ -147,8 +147,8 @@ const Landing = () => {
         <Logo size="md" />
         <nav className="hidden md:flex items-center gap-8">
           {[
-            { label: 'Funktioner', href: '#features' },
-            { label: 'Om Parseway', href: '#about' },
+            { label: 'Hur det fungerar', href: '#features' },
+            { label: 'Om oss', href: '#about' },
             { label: 'Tillit', href: '#trust' },
             { label: 'Kontakt', href: '#contact' },
           ].map((item) => (
@@ -197,19 +197,19 @@ const Landing = () => {
               className="text-xs font-medium tracking-widest uppercase"
               style={{ color: '#2DB7A3', letterSpacing: '0.12em' }}
             >
-              Dataintegration & AI-automatisering
+              Klarhet. Kontroll. Tillit.
             </p>
             <h1
               className="font-medium leading-tight"
               style={{ fontSize: 'clamp(2.25rem, 5vw, 3.5rem)', color: '#0F172A', lineHeight: 1.12 }}
             >
-              Gör komplex information begriplig — innan den rör sig vidare
+              Från kaos till klarhet. Direkt.
             </h1>
             <p
               className="leading-relaxed"
               style={{ fontSize: '1.1rem', color: '#475569', maxWidth: '42ch' }}
             >
-              Parseway är lagret mellan dina system och informationskällor. Data tas emot, förstås, struktureras och levereras på ett kontrollerat och tillförlitligt sätt — automatiskt, varje gång.
+              Du vet var informationen finns. Men att hitta den, kontrollera den och få den på rätt plats tar tid. Parseway tar hand om det. Varje gång.
             </p>
             <div className="flex items-center gap-4 mt-1">
               {ctaBtn('Kom igång')}
@@ -241,19 +241,16 @@ const Landing = () => {
                 className="font-medium leading-tight"
                 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', color: '#0F172A', lineHeight: 1.2 }}
               >
-                Det manuella informationsarbetet är ett olöst problem
+                Det tar för lång tid att lita på sin information.
               </h2>
               <p className="text-base leading-relaxed" style={{ color: '#475569' }}>
-                Varje bransch arbetar dagligen med att hitta rätt information i ett hav av rapporter, årsredovisningar, databaser och interna system. Man vet ungefär var den finns — men att faktiskt lokalisera den, kontrollera den och sammanställa den korrekt tar tid.
+                Informationen finns. Den ligger i rapporter, dokument och system du redan har. Men att hitta rätt, kontrollera att det stämmer och sammanställa det korrekt — det tar tid. Varje gång.
               </p>
               <p className="text-base leading-relaxed" style={{ color: '#475569' }}>
-                Arbetet är repetitivt men kräver ändå manuell handpåläggning varje gång, eftersom informationen ligger utspridd på många ställen och i olika format.
+                Och det upprepas. Dag efter dag. Samma sökande. Samma osäkerhet.
               </p>
               <p className="text-base leading-relaxed font-medium" style={{ color: '#0F172A' }}>
-                Parseway automatiserar detta. Istället för att du manuellt letar, kopierar och sammanställer — samlar Parseway in data, analyserar innehållet, strukturerar det och presenterar det enligt en mall du definierat.
-              </p>
-              <p className="text-base leading-relaxed" style={{ color: '#475569' }}>
-                Det som tidigare tog timmar av manuellt arbete blir ett stabilt och repeterbart flöde.
+                Parseway tar hand om det. Du definierar en gång vad du behöver. Parseway hämtar, läser och levererar. Klart.
               </p>
             </div>
             <div>
@@ -261,7 +258,7 @@ const Landing = () => {
                 className="text-xs font-medium tracking-widest uppercase mb-5"
                 style={{ color: '#2DB7A3', letterSpacing: '0.12em' }}
               >
-                Det innebär för din verksamhet
+                Det märks direkt
               </p>
               <ul className="flex flex-col gap-3">
                 {OUTCOMES.map((item) => (
@@ -298,13 +295,13 @@ const Landing = () => {
               className="font-medium"
               style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', color: '#0F172A' }}
             >
-              Fyra steg. Ett sammanhängande flöde.
+              Enkelt flöde. Tydligt resultat.
             </h2>
             <p
               className="mt-4 mx-auto"
               style={{ fontSize: '1rem', color: '#475569', maxWidth: '52ch' }}
             >
-              Parseway hanterar hela kedjan — från inkommande rådata till strukturerad, levererad information.
+              Du bestämmer vad som ska hämtas och hur det ska se ut. Parseway sköter resten.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -316,8 +313,8 @@ const Landing = () => {
                   <path d="M10 7v3l2 2" stroke="#2DB7A3" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
               }
-              title="Analysera"
-              description="Förstå inkommande data och innehåll. Parseway identifierar vad informationen är, var den kommer ifrån och vad den innehåller — oavsett källa eller format."
+              title="Läser"
+              description="Parseway läser igenom dina dokument och källor. Den förstår vad informationen handlar om — oavsett format."
             />
             <PipelineStepCard
               number="02"
@@ -328,8 +325,8 @@ const Landing = () => {
                   <rect x="3" y="13" width="7" height="2.5" rx="1.25" fill="#2DB7A3" />
                 </svg>
               }
-              title="Strukturera"
-              description="Ordna och normalisera informationen. Rådata från olika källor samlas i en enhetlig struktur enligt dina definierade regler och fält."
+              title="Ordnar"
+              description="Informationen sorteras och samlas. Allt hamnar på rätt plats, enligt den mall du en gång satt upp."
             />
             <PipelineStepCard
               number="03"
@@ -338,8 +335,8 @@ const Landing = () => {
                   <path d="M4 10h4l2-4 2 8 2-4h2" stroke="#2DB7A3" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               }
-              title="Transformera"
-              description="Anpassa format och logik efter behov. Parseway omvandlar strukturerad data till det exakta format och den presentation som ditt system eller din mall kräver."
+              title="Anpassar"
+              description="Resultatet formas efter exakt det du behöver. Rätt format. Rätt fält. Klart för användning."
             />
             <PipelineStepCard
               number="04"
@@ -349,8 +346,8 @@ const Landing = () => {
                   <circle cx="5" cy="10" r="2" stroke="#2DB7A3" strokeWidth="1.4" />
                 </svg>
               }
-              title="Routa"
-              description="Leverera rätt information till rätt plats. Det färdiga resultatet skickas automatiskt vidare — till rätt system, mottagare eller rapport — vid rätt tidpunkt."
+              title="Levererar"
+              description="Färdigt resultat skickas vidare dit det ska. Till rätt person, system eller rapport — automatiskt."
             />
           </div>
         </section>
@@ -377,19 +374,19 @@ const Landing = () => {
                 className="text-xs font-medium tracking-widest uppercase mb-4"
                 style={{ color: '#2DB7A3', letterSpacing: '0.12em' }}
               >
-                Tillit och kontroll
+                Byggt för tillit
               </p>
               <h2
                 className="font-medium mb-5"
                 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', color: '#0F172A', lineHeight: 1.2 }}
               >
-                Varje resultat kan härledas till sin källa
+                Inga svarta lådor.
               </h2>
               <p
                 className="text-base leading-relaxed mx-auto"
                 style={{ color: '#475569', maxWidth: '58ch' }}
               >
-                All information som passerar genom Parseway är spårbar. Varje datapunkt, sammanställning och AI-genererad insikt kan härledas till sin ursprungliga källa. Du kan alltid se var informationen kommer ifrån, hur den har bearbetats och vilka steg som har påverkat resultatet.
+                Varje insikt har en källa. Varje steg är synligt. Du kan alltid se var informationen kommer ifrån och hur den har bearbetats. Full transparens. Alltid.
               </p>
             </div>
             <div
@@ -400,14 +397,14 @@ const Landing = () => {
                 className="text-sm leading-relaxed italic"
                 style={{ color: '#475569' }}
               >
-                "I en tid där AI används för att sammanställa och generera beslutsunderlag är transparens avgörande. Parseway bygger inte svarta lådor. Resultaten är granskningsbara, dokumenterade och kontrollerbara."
+                "Parseway bygger inte svarta lådor. Varje resultat kan spåras. Varje insikt har en källa. Det är precis som det ska vara."
               </p>
             </div>
             <div className="grid sm:grid-cols-3 gap-4 w-full max-w-2xl">
               {[
-                { label: 'Granskningsbara', desc: 'Varje steg i processen är synligt och dokumenterat.' },
-                { label: 'Kontrollerbara', desc: 'Du bestämmer regler, format och flöden — inte Parseway.' },
-                { label: 'Verifierbara', desc: 'Källkritik och verifiering blir en naturlig del av arbetsflödet.' },
+                { label: 'Granskningsbara', desc: 'Varje steg syns. Inget döljs.' },
+                { label: 'Kontrollerbara', desc: 'Du sätter reglerna. Parseway följer dem.' },
+                { label: 'Verifierbara', desc: 'Varje svar går att spåra till källan.' },
               ].map((item) => (
                 <div
                   key={item.label}
@@ -436,10 +433,10 @@ const Landing = () => {
                 className="font-medium"
                 style={{ fontSize: 'clamp(1.5rem, 2.5vw, 2rem)', color: '#0F172A', lineHeight: 1.25 }}
               >
-                Parseway är tyst infrastruktur. När det fungerar märks det knappt.
+                Parseway är tyst infrastruktur. När det fungerar märks det knappt. Och det är precis poängen.
               </h2>
               <p className="text-base leading-relaxed" style={{ color: '#475569' }}>
-                Informationen flödar dit den ska — i rätt form, vid rätt tid, med full spårbarhet.
+                Ditt arbete flödar. Din information stämmer. Du har kontroll.
               </p>
             </div>
             <div className="flex-shrink-0">
@@ -459,7 +456,7 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <Logo size="sm" />
           <p className="text-sm text-center" style={{ color: '#94A3B8' }}>
-            Vägen som gör att all information kan röra sig säkert, strukturerat och med full tillit.
+            Klarhet. Lugn. Kontroll.
           </p>
           <div className="flex items-center gap-6">
             {['Villkor', 'Integritet', 'Kontakt'].map((item) => (
