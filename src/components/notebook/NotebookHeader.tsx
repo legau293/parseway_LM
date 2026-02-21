@@ -54,7 +54,7 @@ const NotebookHeader = ({ title, notebookId }: NotebookHeaderProps) => {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4">
+    <header className="border-b px-6 py-4" style={{ backgroundColor: 'var(--pw-bg-primary)', borderColor: 'var(--pw-border)' }}>
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
@@ -65,13 +65,17 @@ const NotebookHeader = ({ title, notebookId }: NotebookHeaderProps) => {
                 onChange={(e) => setEditedTitle(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onBlur={handleBlur}
-                className="text-lg font-medium text-gray-900 border-none shadow-none p-0 h-auto focus-visible:ring-0 min-w-[300px] w-auto"
+                className="text-lg font-medium border-none shadow-none p-0 h-auto focus-visible:ring-0 min-w-[300px] w-auto"
+                style={{ color: 'var(--pw-text-primary)' }}
                 autoFocus
                 disabled={isUpdating}
               />
             ) : (
-              <span 
-                className="text-lg font-medium text-gray-900 cursor-pointer hover:bg-gray-50 rounded px-2 py-1 transition-colors"
+              <span
+                className="text-lg font-medium cursor-pointer rounded px-2 py-1 transition-colors"
+                style={{ color: 'var(--pw-text-primary)' }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                 onClick={handleTitleClick}
               >
                 {title}
@@ -79,13 +83,13 @@ const NotebookHeader = ({ title, notebookId }: NotebookHeaderProps) => {
             )}
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="p-0">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors" style={{ backgroundColor: '#2DB7A3' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#1A8F7E')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#2DB7A3')}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors" style={{ backgroundColor: 'var(--pw-primary)' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--pw-primary-hover)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--pw-primary)')}>
                     <User className="h-4 w-4 text-white" />
                   </div>
                 </Button>

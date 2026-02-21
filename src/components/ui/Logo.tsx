@@ -40,8 +40,8 @@ const Logo = ({ size = 'md', showText = true, className = '' }: LogoProps) => {
             letterSpacing: '-0.01em',
           }}
         >
-          <span style={{ color: '#2DB7A3' }}>parse</span>
-          <span style={{ color: '#E5483F' }}>way</span>
+          <span style={{ color: 'var(--pw-primary)' }}>parse</span>
+          <span style={{ color: 'var(--pw-accent-red)' }}>way</span>
         </span>
       )}
     </Link>

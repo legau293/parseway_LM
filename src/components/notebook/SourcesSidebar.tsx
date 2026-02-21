@@ -199,10 +199,10 @@ const SourcesSidebar = ({
     const sourceUrl = selectedSourceForViewing ? getSelectedSourceUrl() : getSourceUrl(selectedCitation);
 
     return (
-      <div className="w-full bg-gray-50 border-r border-gray-200 flex flex-col h-full overflow-hidden">
-        <div className="p-4 border-b border-gray-200 flex-shrink-0">
+      <div className="w-full border-r flex flex-col h-full overflow-hidden" style={{ backgroundColor: 'var(--pw-bg-secondary)', borderColor: 'var(--pw-border)' }}>
+        <div className="p-4 border-b flex-shrink-0" style={{ borderColor: 'var(--pw-border)' }}>
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium text-gray-900 cursor-pointer hover:text-gray-700" onClick={handleBackToSources}>
+            <h2 className="text-lg font-medium cursor-pointer transition-colors" style={{ color: 'var(--pw-text-primary)' }} onClick={handleBackToSources}>
               Sources
             </h2>
             <Button variant="ghost" onClick={handleBackToSources} className="p-2 [&_svg]:!w-6 [&_svg]:!h-6">
@@ -226,10 +226,10 @@ const SourcesSidebar = ({
   }
 
   return (
-    <div className="w-full bg-gray-50 border-r border-gray-200 flex flex-col h-full overflow-hidden">
-      <div className="p-4 border-b border-gray-200 flex-shrink-0">
+    <div className="w-full border-r flex flex-col h-full overflow-hidden" style={{ backgroundColor: 'var(--pw-bg-secondary)', borderColor: 'var(--pw-border)' }}>
+      <div className="p-4 border-b flex-shrink-0" style={{ borderColor: 'var(--pw-border)' }}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-medium text-gray-900">Sources</h2>
+          <h2 className="text-lg font-medium" style={{ color: 'var(--pw-text-primary)' }}>Sources</h2>
         </div>
         
         <div className="flex space-x-2">
@@ -244,21 +244,21 @@ const SourcesSidebar = ({
         <div className="p-4">
           {isLoading ? (
             <div className="text-center py-8">
-              <p className="text-sm text-gray-600">Loading sources...</p>
+              <p className="text-sm" style={{ color: 'var(--pw-text-secondary)' }}>Loading sources...</p>
             </div>
           ) : sources && sources.length > 0 ? (
             <div className="space-y-4">
               {sources.map((source) => (
                 <ContextMenu key={source.id}>
                   <ContextMenuTrigger>
-                    <Card className="p-3 border border-gray-200 cursor-pointer hover:bg-gray-50" onClick={() => handleSourceClick(source)}>
+                    <Card className="p-3 cursor-pointer transition-colors" style={{ border: '1px solid var(--pw-border)', backgroundColor: 'var(--pw-bg-primary)' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--pw-bg-primary)')} onClick={() => handleSourceClick(source)}>
                       <div className="flex items-start justify-between space-x-3">
                         <div className="flex items-center space-x-2 flex-1 min-w-0">
-                          <div className="w-6 h-6 bg-white rounded border border-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ backgroundColor: 'var(--pw-bg-primary)', border: '1px solid var(--pw-border)' }}>
                             {renderSourceIcon(source.type)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <span className="text-sm text-gray-900 truncate block">{source.title}</span>
+                            <span className="text-sm truncate block" style={{ color: 'var(--pw-text-primary)' }}>{source.title}</span>
                           </div>
                         </div>
                         <div className="flex-shrink-0 py-[4px]">
@@ -282,11 +282,11 @@ const SourcesSidebar = ({
             </div>
           ) : (
             <div className="text-center py-8">
-              <div className="w-16 h-16 bg-gray-200 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                <span className="text-gray-400 text-2xl">📄</span>
+              <div className="w-16 h-16 rounded-lg mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: 'var(--pw-bg-tertiary)' }}>
+                <span className="text-2xl" style={{ color: 'var(--pw-text-tertiary)' }}>📄</span>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Saved sources will appear here</h3>
-              <p className="text-sm text-gray-600 mb-4">Click Add source above to add PDFs, text, or audio files.</p>
+              <h3 className="text-lg font-medium mb-2" style={{ color: 'var(--pw-text-primary)' }}>Saved sources will appear here</h3>
+              <p className="text-sm mb-4" style={{ color: 'var(--pw-text-secondary)' }}>Click Add source above to add PDFs, text, or audio files.</p>
             </div>
           )}
         </div>
