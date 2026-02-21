@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { ParsewayLayout } from "@/components/layouts/ParsewayLayout";
 import Index from "./pages/Index";
 import Notebook from "./pages/Notebook";
+import Workspace from "./pages/Workspace";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -28,6 +29,14 @@ const AppContent = () => {
         <Route path="/notebook" element={<Notebook />} />
         <Route path="/notebook/:id" element={<Notebook />} />
       </Route>
+      <Route
+        path="/workspace"
+        element={
+          <ProtectedRoute fallback={<Auth />}>
+            <Workspace />
+          </ProtectedRoute>
+        }
+      />
       <Route path="/auth" element={<Auth />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

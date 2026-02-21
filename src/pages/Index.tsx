@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import Dashboard from './Dashboard';
+import Workspace from './Workspace';
 import Landing from './Landing';
 import Logo from '@/components/ui/Logo';
 
@@ -49,7 +49,7 @@ const Index = () => {
     );
   }
 
-  return isAuthenticated ? <Dashboard /> : <Landing />;
+  return isAuthenticated ? <Workspace /> : <Landing />;
 };
 
 export default Index;
