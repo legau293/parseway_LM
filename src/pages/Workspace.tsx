@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Settings, HelpCircle, Search, Building2, ChevronRight } from 'lucide-react';
+import parsewayLogo from "@/assets/parseway-logo.svg";
+import { Link } from "react-router-dom";
 
 const COMPANIES = [
   'Volvo AB',
@@ -30,12 +32,9 @@ const Workspace = () => {
         }}
       >
         <div className="px-5 pt-5 pb-4">
-          <span
-            className="font-medium text-sm tracking-wide"
-            style={{ color: 'var(--pw-text-primary)' }}
-          >
-            parseway
-          </span>
+          <Link to="/workspace" className="block mb-6">
+            <img src={parsewayLogo} alt="Parseway" style={{ height: 22 }} />
+          </Link>
         </div>
 
         <div className="px-3 pb-3">

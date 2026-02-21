@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 36" fill="none">
+  <g>
+    <path d="M18 2C18 2 6 7 6 18C6 26.837 11.163 32 18 34C24.837 32 30 26.837 30 18C30 7 18 2 18 2Z" fill="#3ECFB2"/>
+    <path d="M18 2C18 2 30 7 30 18C30 26.837 24.837 32 18 34L18 2Z" fill="#E8402A"/>
+    <line x1="18" y1="2" x2="18" y2="34" stroke="white" stroke-width="1.5"/>
+  </g>
+  <text x="38" y="24" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="500" fill="#1a1a1a" letter-spacing="0.01em">parseway</text>
+</svg>
