@@ -59,6 +59,32 @@
   }
 }
 
+:root {
+  /* Parseway brand */
+  --pw-primary: #2DB7A3;
+  --pw-primary-hover: #1A8F7E;
+  --pw-primary-active: #0E6B5E;
+  --pw-accent-red: #E5483F;
+
+  /* Backgrounds */
+  --pw-bg-primary: #FFFFFF;
+  --pw-bg-secondary: #F7F9F8;
+  --pw-bg-tertiary: #EEF2F1;
+
+  /* Text */
+  --pw-text-primary: #0F172A;
+  --pw-text-secondary: #475569;
+  --pw-text-tertiary: #94A3B8;
+
+  /* UI */
+  --pw-border: #E2E8F0;
+  --pw-divider: #F1F5F9;
+
+  /* Disabled */
+  --pw-disabled-bg: #E2E8F0;
+  --pw-disabled-text: #94A3B8;
+}
+
 @layer base {
   * {
     @apply border-border;
