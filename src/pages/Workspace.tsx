@@ -33,7 +33,12 @@ const Workspace = () => {
       >
         <div className="px-5 pt-5 pb-4">
           <Link to="/workspace" className="block mb-6">
-            <img src={parsewayLogo} alt="Parseway" style={{ height: 22 }} />
+            <img
+              src={parsewayLogo}
+              alt="Parseway"
+              style={{ height: 28, width: "auto", display: "block" }}
+              className="block"
+            />
           </Link>
         </div>
 
