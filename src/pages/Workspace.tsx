@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Settings, HelpCircle, Search, Building2, ChevronRight } from 'lucide-react';
-import parsewayLogo from "@/assets/parseway-logo.svg";
-import { Link } from "react-router-dom";
+import Logo from "@/components/ui/Logo";
 
 const COMPANIES = [
   'Volvo AB',
@@ -32,14 +31,9 @@ const Workspace = () => {
         }}
       >
         <div className="px-5 pt-5 pb-4">
-          <Link to="/workspace" className="block mb-6">
-            <img
-              src={parsewayLogo}
-              alt="Parseway"
-              style={{ height: 28, width: "auto", display: "block" }}
-              className="block"
-            />
-          </Link>
+          <div className="mb-6">
+            <Logo size="sm" showText={true} />
+          </div>
         </div>
 
         <div className="px-3 pb-3">
