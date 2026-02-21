@@ -70,33 +70,24 @@ const AuthForm = () => {
   });
 
   return (
-    <div className="w-full" style={{ maxWidth: '420px' }}>
-      <div
-        style={{
-          backgroundColor: '#FFFFFF',
-          border: '1px solid #E2E8F0',
-          borderRadius: '16px',
-          padding: '40px',
-          boxShadow: '0 4px 24px rgba(15,23,42,0.06)',
-        }}
-      >
-        <div className="mb-8 text-center">
-          <p
-            className="font-medium tracking-widest uppercase mb-3"
-            style={{ fontSize: '11px', color: '#2DB7A3', letterSpacing: '0.12em' }}
-          >
-            Välkommen tillbaka
-          </p>
-          <h1
-            className="font-medium mb-2"
-            style={{ fontSize: '26px', color: '#0F172A', lineHeight: 1.2 }}
-          >
-            Sign in to parseway
-          </h1>
-          <p style={{ fontSize: '14px', color: '#475569' }}>
-            Enter your credentials to access your account
-          </p>
-        </div>
+    <div className="w-full" style={{ maxWidth: '400px' }}>
+      <div style={{ marginBottom: '32px' }}>
+        <p
+          className="font-medium tracking-widest uppercase mb-3"
+          style={{ fontSize: '11px', color: '#2DB7A3', letterSpacing: '0.12em' }}
+        >
+          Välkommen tillbaka
+        </p>
+        <h2
+          className="font-medium"
+          style={{ fontSize: '28px', color: '#0F172A', lineHeight: 1.15, letterSpacing: '-0.01em', marginBottom: '8px' }}
+        >
+          Logga in på Parseway
+        </h2>
+        <p style={{ fontSize: '15px', color: '#475569' }}>
+          Din information väntar redan.
+        </p>
+      </div>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -109,7 +100,7 @@ const AuthForm = () => {
               fontFamily: "'Inter', system-ui, sans-serif",
             }}
           >
-            Email
+            E-post
           </label>
           <input
             id="email"
@@ -119,7 +110,7 @@ const AuthForm = () => {
             onFocus={() => setFocusedField('email')}
             onBlur={() => setFocusedField(null)}
             required
-            placeholder="you@example.com"
+            placeholder="du@exempel.com"
             style={inputStyle('email')}
             autoComplete="email"
           />
@@ -135,7 +126,7 @@ const AuthForm = () => {
               fontFamily: "'Inter', system-ui, sans-serif",
             }}
           >
-            Password
+            Lösenord
           </label>
           <input
             id="password"
@@ -152,50 +143,57 @@ const AuthForm = () => {
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            width: '100%',
-            padding: '11px 20px',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: loading ? '#E2E8F0' : '#2DB7A3',
-            color: loading ? '#94A3B8' : '#FFFFFF',
-            fontSize: '15px',
-            fontWeight: 500,
-            fontFamily: "'Inter', system-ui, sans-serif",
-            cursor: loading ? 'not-allowed' : 'pointer',
-            transition: 'background-color 0.15s ease',
-            marginTop: '4px',
-          }}
-          onMouseEnter={(e) => {
-            if (!loading) e.currentTarget.style.backgroundColor = '#1A8F7E';
-          }}
-          onMouseLeave={(e) => {
-            if (!loading) e.currentTarget.style.backgroundColor = '#2DB7A3';
-          }}
-          onMouseDown={(e) => {
-            if (!loading) e.currentTarget.style.backgroundColor = '#0E6B5E';
-          }}
-          onMouseUp={(e) => {
-            if (!loading) e.currentTarget.style.backgroundColor = '#1A8F7E';
-          }}
-        >
-          {loading ? 'Signing in...' : 'Sign in'}
-        </button>
-      </form>
-      </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '4px' }}>
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '12px 20px',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: loading ? '#E2E8F0' : '#2DB7A3',
+              color: loading ? '#94A3B8' : '#FFFFFF',
+              fontSize: '15px',
+              fontWeight: 500,
+              fontFamily: "'Inter', system-ui, sans-serif",
+              cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'background-color 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) e.currentTarget.style.backgroundColor = '#1A8F7E';
+            }}
+            onMouseLeave={(e) => {
+              if (!loading) e.currentTarget.style.backgroundColor = '#2DB7A3';
+            }}
+            onMouseDown={(e) => {
+              if (!loading) e.currentTarget.style.backgroundColor = '#0E6B5E';
+            }}
+            onMouseUp={(e) => {
+              if (!loading) e.currentTarget.style.backgroundColor = '#1A8F7E';
+            }}
+          >
+            {loading ? 'Loggar in...' : 'Logga in'}
+          </button>
 
-      <div className="mt-6 text-center">
-        <a
-          href="/"
-          style={{ fontSize: '13px', color: '#475569', textDecoration: 'none', transition: 'color 0.15s ease' }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#2DB7A3')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
-        >
-          &larr; Back to homepage
-        </a>
+          <p style={{ textAlign: 'center', fontSize: '13px', color: '#94A3B8' }}>
+            Allt på rätt plats. Varje gång.
+          </p>
+        </div>
+      </form>
+
+      <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid #F1F5F9', textAlign: 'center' }}>
+        <p style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.6 }}>
+          Ny på Parseway?{' '}
+          <a
+            href="/"
+            style={{ color: '#2DB7A3', textDecoration: 'none', fontWeight: 500, transition: 'color 0.15s ease' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#1A8F7E')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#2DB7A3')}
+          >
+            Det tar bara några sekunder att komma igång.
+          </a>
+        </p>
       </div>
     </div>
   );
