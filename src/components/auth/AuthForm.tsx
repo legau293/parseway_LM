@@ -24,31 +24,21 @@ const AuthForm = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
-          throw new Error('Invalid email or password. Please check your credentials and try again.');
+          throw new Error('Fel e-post eller lösenord. Kontrollera dina uppgifter och försök igen.');
         } else if (error.message.includes('Email not confirmed')) {
-          throw new Error('Please check your email and click the confirmation link before signing in.');
+          throw new Error('Kontrollera din e-post och klicka på bekräftelselänken innan du loggar in.');
         } else {
           throw error;
         }
       }
 
-      toast({
-        title: 'Welcome back!',
-        description: 'You have successfully signed in.',
-      });
+      toast({ title: 'Välkommen tillbaka!', description: 'Du är nu inloggad.' });
     } catch (error: any) {
-      toast({
-        title: 'Sign in failed',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Inloggning misslyckades', description: error.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -56,172 +46,181 @@ const AuthForm = () => {
 
   const inputStyle = (field: string): React.CSSProperties => ({
     width: '100%',
-    padding: '11px 14px',
-    borderRadius: '8px',
-    border: `1.5px solid ${focusedField === field ? '#2DB7A3' : '#E8EEF2'}`,
+    height: '46px',
+    padding: '0 14px',
+    borderRadius: '10px',
+    border: `1px solid ${focusedField === field ? '#2DB7A3' : '#E4E7EC'}`,
     outline: 'none',
     fontSize: '14px',
-    color: '#0F172A',
-    backgroundColor: focusedField === field ? '#FFFFFF' : '#FAFBFC',
-    fontFamily: "'Inter', system-ui, sans-serif",
+    color: '#0D1117',
+    backgroundColor: '#FFFFFF',
+    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
     fontWeight: 400,
-    transition: 'border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease',
-    boxShadow: focusedField === field ? '0 0 0 3px rgba(45,183,163,0.10)' : 'none',
+    transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+    boxShadow: focusedField === field
+      ? '0 0 0 3px rgba(45,183,163,0.12)'
+      : '0 1px 2px rgba(13,17,23,0.04)',
+    boxSizing: 'border-box' as const,
   });
 
   return (
-    <div className="w-full" style={{ maxWidth: '380px' }}>
+    <div style={{ width: '100%', maxWidth: '400px' }}>
       <div
         style={{
           backgroundColor: '#FFFFFF',
-          borderRadius: '14px',
-          overflow: 'hidden',
-          boxShadow: '0 1px 4px rgba(15,23,42,0.04), 0 8px 32px rgba(15,23,42,0.07)',
-          border: '1px solid rgba(226,232,240,0.9)',
+          borderRadius: '18px',
+          border: '1px solid #EAECEF',
+          boxShadow: '0 1px 3px rgba(13,17,23,0.04), 0 4px 24px rgba(13,17,23,0.06)',
+          padding: '32px',
         }}
       >
-        <div
-          style={{
-            height: '1px',
-            backgroundColor: 'rgba(229,72,63,0.65)',
-          }}
-        />
+        <div style={{ marginBottom: '26px' }}>
+          <p
+            style={{
+              fontSize: '11px',
+              fontWeight: 500,
+              letterSpacing: '0.10em',
+              textTransform: 'uppercase',
+              color: '#2DB7A3',
+              marginBottom: '7px',
+            }}
+          >
+            Välkommen tillbaka
+          </p>
+          <h2
+            style={{
+              fontSize: '21px',
+              fontWeight: 600,
+              color: '#0D1117',
+              lineHeight: 1.2,
+              letterSpacing: '-0.02em',
+              marginBottom: '5px',
+            }}
+          >
+            Logga in på Parseway
+          </h2>
+          <p style={{ fontSize: '13px', color: '#8A93A4', fontWeight: 400 }}>
+            Din information väntar redan.
+          </p>
+        </div>
 
-        <div style={{ padding: '36px 36px 32px' }}>
-          <div style={{ marginBottom: '28px' }}>
-            <p
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <label
+              htmlFor="email"
               style={{
-                fontSize: '11px',
+                fontSize: '12.5px',
                 fontWeight: 500,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: '#2DB7A3',
-                marginBottom: '8px',
+                color: '#4B5563',
+                fontFamily: "'Inter', system-ui, sans-serif",
+                letterSpacing: '0.005em',
               }}
             >
-              Välkommen tillbaka
-            </p>
-            <h2
-              style={{
-                fontSize: '22px',
-                fontWeight: 500,
-                color: '#0F172A',
-                lineHeight: 1.2,
-                letterSpacing: '-0.015em',
-                marginBottom: '5px',
-              }}
-            >
-              Logga in på Parseway
-            </h2>
-            <p style={{ fontSize: '13px', color: '#94A3B8' }}>
-              Din information väntar redan.
-            </p>
+              E-post
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onFocus={() => setFocusedField('email')}
+              onBlur={() => setFocusedField(null)}
+              required
+              placeholder="du@exempel.com"
+              style={inputStyle('email')}
+              autoComplete="email"
+            />
           </div>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <label
-                htmlFor="email"
-                style={{
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: '#475569',
-                  fontFamily: "'Inter', system-ui, sans-serif",
-                }}
-              >
-                E-post
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onFocus={() => setFocusedField('email')}
-                onBlur={() => setFocusedField(null)}
-                required
-                placeholder="du@exempel.com"
-                style={inputStyle('email')}
-                autoComplete="email"
-              />
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <label
+              htmlFor="password"
+              style={{
+                fontSize: '12.5px',
+                fontWeight: 500,
+                color: '#4B5563',
+                fontFamily: "'Inter', system-ui, sans-serif",
+                letterSpacing: '0.005em',
+              }}
+            >
+              Lösenord
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onFocus={() => setFocusedField('password')}
+              onBlur={() => setFocusedField(null)}
+              required
+              placeholder="••••••••"
+              minLength={6}
+              style={inputStyle('password')}
+              autoComplete="current-password"
+            />
+          </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <label
-                htmlFor="password"
-                style={{
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: '#475569',
-                  fontFamily: "'Inter', system-ui, sans-serif",
-                }}
-              >
-                Lösenord
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onFocus={() => setFocusedField('password')}
-                onBlur={() => setFocusedField(null)}
-                required
-                placeholder="••••••••"
-                minLength={6}
-                style={inputStyle('password')}
-                autoComplete="current-password"
-              />
-            </div>
+          <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: '100%',
+                height: '44px',
+                borderRadius: '10px',
+                border: 'none',
+                backgroundColor: loading ? '#E4E7EC' : '#2DB7A3',
+                color: loading ? '#9BA5B5' : '#FFFFFF',
+                fontSize: '14px',
+                fontWeight: 500,
+                fontFamily: "'Inter', system-ui, sans-serif",
+                cursor: loading ? 'not-allowed' : 'pointer',
+                transition: 'background-color 0.15s ease, box-shadow 0.15s ease',
+                letterSpacing: '-0.01em',
+                boxShadow: loading ? 'none' : '0 1px 3px rgba(45,183,163,0.25)',
+              }}
+              onMouseEnter={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.backgroundColor = '#1E9E8C';
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(45,183,163,0.30)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.backgroundColor = '#2DB7A3';
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(45,183,163,0.25)';
+                }
+              }}
+              onMouseDown={(e) => {
+                if (!loading) e.currentTarget.style.backgroundColor = '#178070';
+              }}
+              onMouseUp={(e) => {
+                if (!loading) e.currentTarget.style.backgroundColor = '#1E9E8C';
+              }}
+            >
+              {loading ? 'Loggar in...' : 'Logga in'}
+            </button>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px' }}>
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  width: '100%',
-                  padding: '12px 20px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  backgroundColor: loading ? '#E2E8F0' : '#2DB7A3',
-                  color: loading ? '#94A3B8' : '#FFFFFF',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  fontFamily: "'Inter', system-ui, sans-serif",
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  transition: 'background-color 0.15s ease',
-                  letterSpacing: '-0.01em',
-                }}
-                onMouseEnter={(e) => {
-                  if (!loading) e.currentTarget.style.backgroundColor = '#1A8F7E';
-                }}
-                onMouseLeave={(e) => {
-                  if (!loading) e.currentTarget.style.backgroundColor = '#2DB7A3';
-                }}
-                onMouseDown={(e) => {
-                  if (!loading) e.currentTarget.style.backgroundColor = '#0E6B5E';
-                }}
-                onMouseUp={(e) => {
-                  if (!loading) e.currentTarget.style.backgroundColor = '#1A8F7E';
-                }}
-              >
-                {loading ? 'Loggar in...' : 'Logga in'}
-              </button>
-
-              <p style={{ textAlign: 'center', fontSize: '11px', color: '#CBD5E1' }}>
-                Allt på rätt plats. Varje gång.
-              </p>
-            </div>
-          </form>
-        </div>
+            <p style={{ textAlign: 'center', fontSize: '11.5px', color: '#C4CBD8', letterSpacing: '0.005em' }}>
+              Allt på rätt plats. Varje gång.
+            </p>
+          </div>
+        </form>
       </div>
 
-      <div style={{ marginTop: '20px', textAlign: 'center' }}>
-        <p style={{ fontSize: '13px', color: '#94A3B8', lineHeight: 1.6 }}>
+      <div style={{ marginTop: '18px', textAlign: 'center' }}>
+        <p style={{ fontSize: '13px', color: '#8A93A4', lineHeight: 1.6 }}>
           Ny på Parseway?{' '}
           <a
             href="/"
-            style={{ color: '#2DB7A3', textDecoration: 'none', fontWeight: 500, transition: 'color 0.15s ease' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#1A8F7E')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#2DB7A3')}
+            style={{
+              color: '#2DB7A3',
+              textDecoration: 'none',
+              fontWeight: 500,
+              transition: 'color 0.15s ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#1E9E8C')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#2DB7A3')}
           >
             Det tar bara några sekunder att komma igång.
           </a>
