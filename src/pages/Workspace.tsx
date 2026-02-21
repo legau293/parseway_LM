@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Settings, HelpCircle, Search, Building2, ChevronRight } from 'lucide-react';
+import { Settings, HelpCircle, Search, Building2, ChevronRight, LogOut } from 'lucide-react';
 import Logo from "@/components/ui/Logo";
+import { useLogout } from '@/services/authService';
 
 const COMPANIES = [
   'Volvo AB',
@@ -14,6 +15,7 @@ const COMPANIES = [
 const Workspace = () => {
   const [selected, setSelected] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const { logout } = useLogout();
 
   const filtered = COMPANIES.filter((c) =>
     c.toLowerCase().includes(search.toLowerCase())
@@ -107,6 +109,16 @@ const Workspace = () => {
           >
             <HelpCircle size={14} style={{ flexShrink: 0, opacity: 0.6 }} />
             Hjälp
+          </button>
+          <button
+            onClick={logout}
+            className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors"
+            style={{ color: 'var(--pw-text-secondary)', fontWeight: 400 }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            <LogOut size={14} style={{ flexShrink: 0, opacity: 0.6 }} />
+            Logga ut
           </button>
         </div>
       </aside>
