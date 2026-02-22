@@ -530,12 +530,14 @@ const Workspace = () => {
       <div>
         <div className="px-10 pt-8 pb-4" style={{ borderBottom: '1px solid var(--pw-border)' }}>
           <div className="flex items-center justify-between">
-            <h1 style={{ color: 'var(--pw-text-primary)', fontSize: '26px', fontWeight: 500, lineHeight: 1.2 }}>
-              {rootCompany.name}
+            <div className="flex items-center">
+              <h1 style={{ color: 'var(--pw-text-primary)', fontSize: '26px', fontWeight: 500, lineHeight: 1.2 }}>
+                {rootCompany.name}
+              </h1>
               {rootCompany.orgnr && (
                 <OrgNrChip orgnr={rootCompany.orgnr} onCopied={() => showToast('Orgnr kopierat')} />
               )}
-            </h1>
+            </div>
             {rootProgress && <ProgressPill pct={rootProgress.pct} showPct={true} barWidth={100} />}
           </div>
         </div>
@@ -678,7 +680,7 @@ const Workspace = () => {
               <div className="flex items-center">
                 <span
                   onClick={handleBackToRoot}
-                  style={{ color: 'var(--pw-text-secondary)', fontSize: '26px', fontWeight: 500, lineHeight: 1.2, cursor: 'pointer', transition: 'color 0.15s' }}
+                  style={{ color: 'var(--pw-text-secondary)', fontSize: '16px', fontWeight: 400, lineHeight: 1.2, cursor: 'pointer', transition: 'color 0.15s' }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--pw-text-primary)'; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--pw-text-secondary)'; }}
                 >
@@ -688,8 +690,8 @@ const Workspace = () => {
                   <OrgNrChip orgnr={rootCompany.orgnr} onCopied={() => showToast('Orgnr kopierat')} />
                 )}
               </div>
-              <div className="flex items-center mt-1">
-                <h1 style={{ color: 'var(--pw-text-primary)', fontSize: '22px', fontWeight: 500, lineHeight: 1.2 }}>
+              <div className="flex items-center mt-2">
+                <h1 style={{ color: 'var(--pw-text-primary)', fontSize: '26px', fontWeight: 600, lineHeight: 1.2 }}>
                   {selectedSubsidiary.name}
                 </h1>
                 {selectedSubsidiary.orgnr && (
