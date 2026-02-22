@@ -35,3 +35,16 @@ export function getNodeProgress(nodeId: string, tree: OrgTree): NodeProgress {
   const pct = total === 0 ? 0 : Math.round((verified / total) * 100);
   return { verified, total, pct };
 }
+
+export function getDirectObjectsProgress(nodeId: string, tree: OrgTree): NodeProgress {
+  const node = tree[nodeId];
+  if (!node) return { verified: 0, total: 0, pct: 0 };
+  let verified = 0;
+  let total = 0;
+  for (const obj of node.insuranceObjects) {
+    verified += obj.fieldsVerified;
+    total += obj.fieldsTotal;
+  }
+  const pct = total === 0 ? 0 : Math.round((verified / total) * 100);
+  return { verified, total, pct };
+}

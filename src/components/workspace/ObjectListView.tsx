@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { Search } from 'lucide-react';
 import { InsuranceObject } from '@/data/mockOrgTree';
 import ObjectRow, { ObjectListHeader } from './ObjectRow';
 
@@ -12,7 +11,10 @@ interface ObjectListViewProps {
   onToggleObject: (id: string) => void;
   nodeId: string;
   onVerifyField: (nodeId: string, objectId: string) => void;
+  externalSearch?: string;
 }
+
+const OBJECT_TYPES = ['Alla', 'Fastighet', 'Bil', 'Maskin'];
 
 const ThreeColumnDropdown = ({
   object,
@@ -91,12 +93,16 @@ const ThreeColumnDropdown = ({
   );
 };
 
-const OBJECT_TYPES = ['Alla', 'Fastighet', 'Bil', 'Maskin'];
-
-const ObjectListView = ({ objects, expandedObjectId, onToggleObject, nodeId, onVerifyField }: ObjectListViewProps) => {
+const ObjectListView = ({
+  objects,
+  expandedObjectId,
+  onToggleObject,
+  nodeId,
+  onVerifyField,
+  externalSearch = '',
+}: ObjectListViewProps) => {
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
-  const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('Alla');
 
   const handleSort = (key: SortKey) => {
@@ -109,13 +115,17 @@ const ObjectListView = ({ objects, expandedObjectId, onToggleObject, nodeId, onV
   };
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase();
+    const q = externalSearch.toLowerCase();
     return objects.filter((o) => {
-      const matchSearch = !q || o.name.toLowerCase().includes(q) || o.description.toLowerCase().includes(q);
+      const matchSearch =
+        !q ||
+        o.name.toLowerCase().includes(q) ||
+        o.description.toLowerCase().includes(q) ||
+        o.objectType.toLowerCase().includes(q);
       const matchType = typeFilter === 'Alla' || o.objectType === typeFilter;
       return matchSearch && matchType;
     });
-  }, [objects, search, typeFilter]);
+  }, [objects, externalSearch, typeFilter]);
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
@@ -135,22 +145,6 @@ const ObjectListView = ({ objects, expandedObjectId, onToggleObject, nodeId, onV
         className="flex items-center gap-3 px-4 py-2"
         style={{ borderBottom: '1px solid var(--pw-border)' }}
       >
-        <div
-          className="flex items-center gap-1.5 flex-1 max-w-[240px] rounded px-2.5 py-1"
-          style={{ border: '1px solid var(--pw-border)' }}
-        >
-          <Search size={11} style={{ color: 'var(--pw-text-tertiary)', flexShrink: 0 }} />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Sök..."
-            className="bg-transparent outline-none text-xs w-full"
-            style={{ color: 'var(--pw-text-primary)', caretColor: 'var(--pw-accent-red)' }}
-            onFocus={(e) => (e.currentTarget.parentElement!.style.borderColor = 'var(--pw-accent-red)')}
-            onBlur={(e) => (e.currentTarget.parentElement!.style.borderColor = 'var(--pw-border)')}
-          />
-        </div>
-
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
@@ -168,9 +162,9 @@ const ObjectListView = ({ objects, expandedObjectId, onToggleObject, nodeId, onV
           ))}
         </select>
 
-        {(search || typeFilter !== 'Alla') && (
+        {typeFilter !== 'Alla' && (
           <button
-            onClick={() => { setSearch(''); setTypeFilter('Alla'); }}
+            onClick={() => setTypeFilter('Alla')}
             className="text-xs transition-colors"
             style={{ color: 'var(--pw-text-tertiary)' }}
             onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--pw-text-secondary)')}
