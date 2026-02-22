@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { InsuranceObject } from '@/data/mockOrgTree';
+
+const OBJECT_TYPE_OPTIONS = ['Fastighet', 'Bil', 'Maskin'];
 
 interface ObjectRowProps {
   object: InsuranceObject;
   isExpanded: boolean;
+  isSelected: boolean;
   onClick: () => void;
+  onUpdate: (patch: Partial<Pick<InsuranceObject, 'name' | 'objectType' | 'description'>>) => void;
 }
 
 const ProgressBar = ({ pct }: { pct: number }) => (
@@ -33,99 +37,131 @@ const ProgressBar = ({ pct }: { pct: number }) => (
 
 const GRID = 'grid grid-cols-[140px_220px_1fr_200px]';
 
-export const ObjectListHeader = ({
-  sortKey,
-  sortDir,
-  onSort,
-}: {
-  sortKey: string;
-  sortDir: 'asc' | 'desc';
-  onSort: (key: 'objectType' | 'name' | 'description' | 'completedPct') => void;
-}) => {
-  const col = (key: 'objectType' | 'name' | 'description' | 'completedPct', label: string) => {
-    const active = sortKey === key;
-    return (
-      <button
-        onClick={() => onSort(key)}
-        className="flex items-center gap-1 text-left text-xs transition-colors select-none"
-        style={{
-          color: active ? 'var(--pw-text-primary)' : 'var(--pw-text-secondary)',
-          fontWeight: active ? 500 : 400,
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--pw-text-primary)')}
-        onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = 'var(--pw-text-secondary)'; }}
-      >
-        {label}
-        {active && (
-          <span style={{ color: 'var(--pw-text-tertiary)', fontSize: '10px' }}>
-            {sortDir === 'asc' ? ' ↑' : ' ↓'}
-          </span>
-        )}
-      </button>
-    );
+export const ObjectListHeader = () => (
+  <div
+    className={`${GRID} items-center px-4 py-2`}
+    style={{ borderBottom: '1px solid var(--pw-border)' }}
+  >
+    <span className="text-xs" style={{ color: 'var(--pw-text-secondary)' }}>Typ</span>
+    <span className="text-xs" style={{ color: 'var(--pw-text-secondary)' }}>Namn</span>
+    <span className="text-xs" style={{ color: 'var(--pw-text-secondary)' }}>Beskrivning</span>
+    <span className="text-xs" style={{ color: 'var(--pw-text-secondary)' }}>Färdigställt</span>
+  </div>
+);
+
+const editInputStyle: React.CSSProperties = {
+  backgroundColor: 'var(--pw-bg-primary)',
+  border: '1px solid var(--pw-border)',
+  color: 'var(--pw-text-primary)',
+  borderRadius: '3px',
+  fontSize: '12px',
+  padding: '2px 6px',
+  outline: 'none',
+  width: '100%',
+};
+
+const ObjectRow = ({ object, isExpanded, isSelected, onClick, onUpdate }: ObjectRowProps) => {
+  const pct = object.fieldsTotal === 0
+    ? 0
+    : Math.round((object.fieldsVerified / object.fieldsTotal) * 100);
+
+  const [editType, setEditType] = useState(object.objectType);
+  const [editName, setEditName] = useState(object.name);
+  const [editDesc, setEditDesc] = useState(object.description);
+
+  useEffect(() => {
+    if (!isSelected) {
+      setEditType(object.objectType);
+      setEditName(object.name);
+      setEditDesc(object.description);
+    }
+  }, [isSelected, object.objectType, object.name, object.description]);
+
+  const handleSave = () => {
+    onUpdate({ objectType: editType, name: editName, description: editDesc });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') { e.preventDefault(); handleSave(); }
+    if (e.key === 'Escape') {
+      setEditType(object.objectType);
+      setEditName(object.name);
+      setEditDesc(object.description);
+    }
   };
 
   return (
     <div
-      className={`${GRID} items-center px-4 py-2`}
-      style={{ borderBottom: '1px solid var(--pw-border)' }}
-    >
-      {col('objectType', 'Typ')}
-      {col('name', 'Namn')}
-      {col('description', 'Beskrivning')}
-      {col('completedPct', 'Färdigställt')}
-    </div>
-  );
-};
-
-const ObjectRow = ({ object, isExpanded, onClick }: ObjectRowProps) => {
-  return (
-    <button
-      onClick={onClick}
-      className={`${GRID} w-full text-left items-center px-4 py-2.5 text-sm transition-colors`}
+      className={`${GRID} w-full items-center px-4 py-2.5 text-sm transition-colors cursor-pointer`}
       style={{
         backgroundColor: isExpanded ? 'var(--pw-bg-tertiary)' : 'transparent',
         borderLeft: isExpanded ? '2px solid var(--pw-accent-red)' : '2px solid transparent',
       }}
-      onMouseEnter={(e) => {
-        if (!isExpanded) e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)';
-      }}
-      onMouseLeave={(e) => {
-        if (!isExpanded) e.currentTarget.style.backgroundColor = 'transparent';
-      }}
+      onClick={onClick}
+      onMouseEnter={(e) => { if (!isExpanded) e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; }}
+      onMouseLeave={(e) => { if (!isExpanded) e.currentTarget.style.backgroundColor = 'transparent'; }}
     >
-      <span className="flex items-center gap-1.5 min-w-0">
-        {isExpanded ? (
-          <ChevronDown size={12} style={{ color: 'var(--pw-text-tertiary)', flexShrink: 0 }} />
-        ) : (
-          <ChevronRight size={12} style={{ color: 'var(--pw-text-tertiary)', flexShrink: 0 }} />
-        )}
-        <span
-          className="truncate text-xs"
-          style={{ color: 'var(--pw-text-secondary)', fontWeight: 400 }}
+      {isSelected ? (
+        <select
+          value={editType}
+          onChange={(e) => setEditType(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyDown}
+          onClick={(e) => e.stopPropagation()}
+          style={{ ...editInputStyle, fontSize: '11px' }}
         >
-          {object.objectType}
+          {OBJECT_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+      ) : (
+        <span className="flex items-center gap-1.5 min-w-0">
+          {isExpanded ? (
+            <ChevronDown size={12} style={{ color: 'var(--pw-text-tertiary)', flexShrink: 0 }} />
+          ) : (
+            <ChevronRight size={12} style={{ color: 'var(--pw-text-tertiary)', flexShrink: 0 }} />
+          )}
+          <span className="truncate text-xs" style={{ color: 'var(--pw-text-secondary)', fontWeight: 400 }}>
+            {object.objectType}
+          </span>
         </span>
-      </span>
+      )}
 
-      <span
-        className="truncate pr-3 text-sm"
-        style={{ color: 'var(--pw-text-primary)', fontWeight: isExpanded ? 500 : 400 }}
-      >
-        {object.name}
-      </span>
+      {isSelected ? (
+        <input
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyDown}
+          onClick={(e) => e.stopPropagation()}
+          style={{ ...editInputStyle, fontWeight: 500 }}
+        />
+      ) : (
+        <span
+          className="truncate pr-3 text-sm"
+          style={{ color: 'var(--pw-text-primary)', fontWeight: isExpanded ? 500 : 400 }}
+        >
+          {object.name}
+        </span>
+      )}
 
-      <span
-        className="truncate pr-3 text-xs"
-        style={{ color: 'var(--pw-text-tertiary)' }}
-      >
-        {object.description}
-      </span>
+      {isSelected ? (
+        <input
+          value={editDesc}
+          onChange={(e) => setEditDesc(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyDown}
+          onClick={(e) => e.stopPropagation()}
+          style={{ ...editInputStyle }}
+        />
+      ) : (
+        <span className="truncate pr-3 text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>
+          {object.description}
+        </span>
+      )}
 
       <div className="pr-2">
-        <ProgressBar pct={object.completedPct} />
+        <ProgressBar pct={pct} />
       </div>
-    </button>
+    </div>
   );
 };
 

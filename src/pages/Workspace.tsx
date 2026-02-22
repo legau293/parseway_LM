@@ -1,38 +1,30 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Search, Plus, X, Filter } from 'lucide-react';
+import { Search, Plus, Trash2 } from 'lucide-react';
 import { useLogout } from '@/services/authService';
 import WorkspaceShell from '@/components/workspace/WorkspaceShell';
 import WorkspaceSidebar from '@/components/workspace/WorkspaceSidebar';
-import WorkspaceHeader from '@/components/workspace/WorkspaceHeader';
 import ObjectListView from '@/components/workspace/ObjectListView';
 import ProgressPill from '@/components/workspace/ProgressPill';
 import CopyChip from '@/components/workspace/CopyChip';
 import WorkspaceToast from '@/components/workspace/WorkspaceToast';
 import {
   OrgTree,
-  ROOT_COMPANY_IDS,
-  CompanyNode,
   getTree,
-  getPathToNode,
-  addChildNode,
+  addRootCompany,
+  addSubsidiary,
+  deleteSubsidiaries,
   addInsuranceObject,
   incrementFieldVerified,
+  updateInsuranceObject,
+  InsuranceObject,
 } from '@/data/mockOrgTree';
-import { getNodeProgress, getDirectObjectsProgress } from '@/utils/progress';
+import {
+  getNodeProgress,
+  getSubsidiaryProgress,
+} from '@/utils/progress';
 
-type Panel = 'search' | 'add' | 'filter' | null;
-
+type Panel = 'search' | 'add' | null;
 const OBJECT_TYPE_OPTIONS = ['Fastighet', 'Bil', 'Maskin'];
-const SUB_SORT_OPTIONS = [
-  { value: 'az', label: 'Namn A–Ö' },
-  { value: 'za', label: 'Namn Ö–A' },
-];
-const OBJ_SORT_OPTIONS = [
-  { value: 'az', label: 'Namn A–Ö' },
-  { value: 'za', label: 'Namn Ö–A' },
-  { value: 'pct_desc', label: 'Färdigställt högst' },
-  { value: 'pct_asc', label: 'Färdigställt lägst' },
-];
 
 interface NewObjectForm {
   objectType: string;
@@ -73,366 +65,33 @@ function useClickOutside(ref: React.RefObject<HTMLElement>, handler: () => void)
   }, [ref, handler]);
 }
 
-const IconBtn = ({
-  active,
-  title,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  title: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) => (
-  <button
-    onClick={onClick}
-    title={title}
-    aria-label={title}
-    style={{
-      ...iStyle,
-      color: active ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)',
-      backgroundColor: active ? 'var(--pw-bg-tertiary)' : 'transparent',
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.color = 'var(--pw-text-primary)';
-      if (!active) e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)';
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.color = active ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)';
-      e.currentTarget.style.backgroundColor = active ? 'var(--pw-bg-tertiary)' : 'transparent';
-    }}
-  >
-    {children}
-  </button>
-);
-
-const SubSearchPanel = ({
-  value,
-  onChange,
-  autoFocusRef,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  autoFocusRef: React.RefObject<HTMLInputElement>;
-}) => (
-  <div className="flex items-center gap-1.5" style={{ minWidth: '180px' }}>
-    <input
-      ref={autoFocusRef}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      onKeyDown={(e) => { if (e.key === 'Escape') onChange(''); }}
-      placeholder="Sök dotterbolag…"
-      className="text-xs outline-none"
-      style={{ ...inputBase, flex: 1, padding: '3px 7px' }}
-      onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--pw-accent-red)')}
-      onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--pw-border)')}
-    />
-    {value && (
-      <button onClick={() => onChange('')} style={{ ...iStyle, color: 'var(--pw-text-tertiary)' }}>
-        <X size={11} />
-      </button>
-    )}
-  </div>
-);
-
-const SubAddPanel = ({
-  value,
-  onChange,
-  onConfirm,
-  autoFocusRef,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  onConfirm: () => void;
-  autoFocusRef: React.RefObject<HTMLInputElement>;
-}) => (
-  <div className="flex items-center gap-1.5" style={{ minWidth: '200px' }}>
-    <input
-      ref={autoFocusRef}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      onKeyDown={(e) => { if (e.key === 'Enter' && value.trim()) onConfirm(); }}
-      placeholder="Dotterbolagsnamn…"
-      className="text-xs outline-none"
-      style={{ ...inputBase, flex: 1, padding: '3px 7px' }}
-      onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--pw-accent-red)')}
-      onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--pw-border)')}
-    />
-    <button
-      onClick={onConfirm}
-      disabled={!value.trim()}
-      className="text-xs px-2 py-0.5 rounded"
-      style={{
-        border: `1px solid ${value.trim() ? 'var(--pw-accent-red)' : 'var(--pw-border)'}`,
-        color: value.trim() ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)',
-        backgroundColor: 'transparent',
-        cursor: value.trim() ? 'pointer' : 'default',
-        opacity: value.trim() ? 1 : 0.5,
-        whiteSpace: 'nowrap',
-      }}
-    >
-      Skapa
-    </button>
-  </div>
-);
-
-const SubFilterPanel = ({
-  sortVal,
-  onSort,
-}: {
-  sortVal: string;
-  onSort: (v: string) => void;
-}) => (
-  <div className="flex items-center gap-2" style={{ minWidth: '160px' }}>
-    <span className="text-xs shrink-0" style={{ color: 'var(--pw-text-tertiary)' }}>Sortera:</span>
-    <select
-      value={sortVal}
-      onChange={(e) => onSort(e.target.value)}
-      className="text-xs rounded outline-none cursor-pointer"
-      style={{ ...inputBase, padding: '3px 7px', flex: 1 }}
-      onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--pw-accent-red)')}
-      onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--pw-border)')}
-    >
-      {SUB_SORT_OPTIONS.map((o) => (
-        <option key={o.value} value={o.value}>{o.label}</option>
-      ))}
-    </select>
-  </div>
-);
-
-const ObjSearchPanel = ({
-  value,
-  onChange,
-  autoFocusRef,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  autoFocusRef: React.RefObject<HTMLInputElement>;
-}) => (
-  <div className="flex items-center gap-1.5" style={{ minWidth: '180px' }}>
-    <input
-      ref={autoFocusRef}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      onKeyDown={(e) => { if (e.key === 'Escape') onChange(''); }}
-      placeholder="Sök försäkringsobjekt…"
-      className="text-xs outline-none"
-      style={{ ...inputBase, flex: 1, padding: '3px 7px' }}
-      onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--pw-accent-red)')}
-      onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--pw-border)')}
-    />
-    {value && (
-      <button onClick={() => onChange('')} style={{ ...iStyle, color: 'var(--pw-text-tertiary)' }}>
-        <X size={11} />
-      </button>
-    )}
-  </div>
-);
-
-const ObjAddPanel = ({
-  form,
-  onChange,
-  onConfirm,
-  typeRef,
-}: {
-  form: NewObjectForm;
-  onChange: (f: NewObjectForm) => void;
-  onConfirm: () => void;
-  typeRef: React.RefObject<HTMLSelectElement>;
-}) => {
-  const valid = form.objectType.trim() !== '' || form.name.trim() !== '' || form.description.trim() !== '';
-  const handleKey = (e: React.KeyboardEvent) => { if (e.key === 'Enter' && valid) onConfirm(); };
-  const fb = (e: React.FocusEvent<HTMLElement>) => (e.currentTarget.style.borderColor = 'var(--pw-accent-red)');
-  const bb = (e: React.FocusEvent<HTMLElement>) => (e.currentTarget.style.borderColor = 'var(--pw-border)');
-  return (
-    <div className="flex items-center gap-1.5 flex-wrap">
-      <select
-        ref={typeRef}
-        value={form.objectType}
-        onChange={(e) => onChange({ ...form, objectType: e.target.value })}
-        onKeyDown={handleKey}
-        onFocus={fb} onBlur={bb}
-        className="text-xs rounded outline-none cursor-pointer"
-        style={{ ...inputBase, padding: '3px 7px', width: '90px' }}
-      >
-        {OBJECT_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-      </select>
-      <input
-        value={form.name}
-        onChange={(e) => onChange({ ...form, name: e.target.value })}
-        onKeyDown={handleKey}
-        onFocus={fb} onBlur={bb}
-        placeholder="Namn…"
-        className="text-xs outline-none"
-        style={{ ...inputBase, padding: '3px 7px', width: '110px' }}
-      />
-      <input
-        value={form.description}
-        onChange={(e) => onChange({ ...form, description: e.target.value })}
-        onKeyDown={handleKey}
-        onFocus={fb} onBlur={bb}
-        placeholder="Beskrivning…"
-        className="text-xs outline-none"
-        style={{ ...inputBase, padding: '3px 7px', width: '140px' }}
-      />
-      <button
-        onClick={onConfirm}
-        disabled={!valid}
-        className="text-xs px-2 py-0.5 rounded"
-        style={{
-          border: `1px solid ${valid ? 'var(--pw-accent-red)' : 'var(--pw-border)'}`,
-          color: valid ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)',
-          backgroundColor: 'transparent',
-          cursor: valid ? 'pointer' : 'default',
-          opacity: valid ? 1 : 0.5,
-          whiteSpace: 'nowrap',
-        }}
-      >
-        Skapa
-      </button>
-    </div>
-  );
-};
-
-const ObjFilterPanel = ({
-  sortVal,
-  onSort,
-  typeFilter,
-  onTypeFilter,
-}: {
-  sortVal: string;
-  onSort: (v: string) => void;
-  typeFilter: string;
-  onTypeFilter: (v: string) => void;
-}) => (
-  <div className="flex items-center gap-3 flex-wrap">
-    <div className="flex items-center gap-1.5">
-      <span className="text-xs shrink-0" style={{ color: 'var(--pw-text-tertiary)' }}>Typ:</span>
-      <select
-        value={typeFilter}
-        onChange={(e) => onTypeFilter(e.target.value)}
-        className="text-xs rounded outline-none cursor-pointer"
-        style={{ ...inputBase, padding: '3px 7px', width: '100px' }}
-        onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--pw-accent-red)')}
-        onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--pw-border)')}
-      >
-        {['Alla', 'Fastighet', 'Bil', 'Maskin'].map((t) => (
-          <option key={t} value={t}>{t}</option>
-        ))}
-      </select>
-    </div>
-    <div className="flex items-center gap-1.5">
-      <span className="text-xs shrink-0" style={{ color: 'var(--pw-text-tertiary)' }}>Sortera:</span>
-      <select
-        value={sortVal}
-        onChange={(e) => onSort(e.target.value)}
-        className="text-xs rounded outline-none cursor-pointer"
-        style={{ ...inputBase, padding: '3px 7px', width: '150px' }}
-        onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--pw-accent-red)')}
-        onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--pw-border)')}
-      >
-        {OBJ_SORT_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-    </div>
-  </div>
-);
-
-const SectionHeader = ({
-  title,
-  count,
-  isOpen,
-  onToggle,
-  progress,
-  activePanel,
-  onPanelToggle,
-  panelContent,
-  headerRef,
-}: {
-  title: string;
-  count: number;
-  isOpen: boolean;
-  onToggle: () => void;
-  progress: number;
-  activePanel: Panel;
-  onPanelToggle: (p: Panel) => void;
-  panelContent: React.ReactNode;
-  headerRef: React.RefObject<HTMLDivElement>;
-}) => (
-  <div
-    ref={headerRef}
-    className="flex items-center gap-2 px-10 py-2 flex-wrap"
-    style={{ borderBottom: '1px solid var(--pw-border)', minHeight: '40px' }}
-  >
-    <button
-      onClick={onToggle}
-      className="flex items-center gap-1.5 text-sm shrink-0"
-      style={{ color: 'var(--pw-text-primary)', fontWeight: 500 }}
-    >
-      <span
-        className="text-xs"
-        style={{ color: 'var(--pw-text-tertiary)', display: 'inline-block', width: '10px', textAlign: 'center' }}
-      >
-        {isOpen ? '▾' : '▸'}
-      </span>
-      {title}
-      <span className="text-xs" style={{ color: 'var(--pw-text-tertiary)', fontWeight: 400 }}>
-        {count}
-      </span>
-    </button>
-
-    <div className="flex items-center gap-0.5 shrink-0">
-      <IconBtn active={activePanel === 'search'} title="Sök" onClick={() => onPanelToggle('search')}>
-        <Search size={13} />
-      </IconBtn>
-      <IconBtn active={activePanel === 'add'} title="Lägg till" onClick={() => onPanelToggle('add')}>
-        <Plus size={13} />
-      </IconBtn>
-      <IconBtn active={activePanel === 'filter'} title="Filtrera / sortera" onClick={() => onPanelToggle('filter')}>
-        <Filter size={13} />
-      </IconBtn>
-    </div>
-
-    {activePanel && panelContent && (
-      <div className="flex items-center ml-2">
-        {panelContent}
-      </div>
-    )}
-
-    <div className="ml-auto shrink-0">
-      <ProgressPill pct={progress} showPct={true} barWidth={80} />
-    </div>
-  </div>
-);
-
 const Workspace = () => {
-  const [tree, setTree] = useState<OrgTree>(() => ({ ...getTree() }));
-  const [rootCompanyIds, setRootCompanyIds] = useState<string[]>([...ROOT_COMPANY_IDS]);
-
+  const { logout } = useLogout();
+  const [tree, setTree] = useState<OrgTree>(getTree());
   const [selectedRootId, setSelectedRootId] = useState<string | null>(null);
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [expandedObjectId, setExpandedObjectId] = useState<string | null>(null);
-  const [sidebarSearch, setSidebarSearch] = useState('');
+  const [selectedSubsidiaryId, setSelectedSubsidiaryId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [sidebarSearch, setSidebarSearch] = useState('');
 
-  const [isSubsidiariesOpen, setIsSubsidiariesOpen] = useState(true);
-  const [isObjectsOpen, setIsObjectsOpen] = useState(true);
+  const [selectedSubsidiaryIds, setSelectedSubsidiaryIds] = useState<Set<string>>(new Set());
 
-  const [subActivePanel, setSubActivePanel] = useState<Panel>(null);
+  const [subPanel, setSubPanel] = useState<Panel>(null);
   const [subSearch, setSubSearch] = useState('');
-  const [subAddName, setSubAddName] = useState('');
-  const [subSort, setSubSort] = useState('az');
+  const [subAddValue, setSubAddValue] = useState('');
 
-  const [objActivePanel, setObjActivePanel] = useState<Panel>(null);
+  const [objPanel, setObjPanel] = useState<Panel>(null);
   const [objSearch, setObjSearch] = useState('');
-  const [objAddForm, setObjAddForm] = useState<NewObjectForm>({ objectType: 'Fastighet', name: '', description: '' });
-  const [objSort, setObjSort] = useState('az');
   const [objTypeFilter, setObjTypeFilter] = useState('Alla');
+  const [objAddForm, setObjAddForm] = useState<NewObjectForm>({ objectType: 'Fastighet', name: '', description: '' });
+
+  const [expandedObjectId, setExpandedObjectId] = useState<string | null>(null);
+  const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
 
   const [toastMessage, setToastMessage] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const objListRef = useRef<HTMLDivElement>(null);
 
   const showToast = useCallback((msg: string) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -441,342 +100,605 @@ const Workspace = () => {
     toastTimerRef.current = setTimeout(() => setToastVisible(false), 1500);
   }, []);
 
-  const subHeaderRef = useRef<HTMLDivElement>(null);
-  const objHeaderRef = useRef<HTMLDivElement>(null);
-  const subSearchInputRef = useRef<HTMLInputElement>(null);
-  const subAddInputRef = useRef<HTMLInputElement>(null);
-  const objSearchInputRef = useRef<HTMLInputElement>(null);
-  const objAddTypeRef = useRef<HTMLSelectElement>(null);
+  useClickOutside(objListRef as React.RefObject<HTMLElement>, () => {
+    setSelectedObjectId(null);
+  });
 
-  useClickOutside(subHeaderRef, useCallback(() => setSubActivePanel(null), []));
-  useClickOutside(objHeaderRef, useCallback(() => setObjActivePanel(null), []));
+  const allRootIds = Object.keys(tree);
+  const rootCompanyNames: Record<string, string> = {};
+  for (const id of allRootIds) rootCompanyNames[id] = tree[id].name;
 
-  useEffect(() => { if (subActivePanel === 'search') subSearchInputRef.current?.focus(); }, [subActivePanel]);
-  useEffect(() => { if (subActivePanel === 'add') subAddInputRef.current?.focus(); }, [subActivePanel]);
-  useEffect(() => { if (objActivePanel === 'search') objSearchInputRef.current?.focus(); }, [objActivePanel]);
-  useEffect(() => { if (objActivePanel === 'add') objAddTypeRef.current?.focus(); }, [objActivePanel]);
+  const rootCompany = selectedRootId ? tree[selectedRootId] : null;
+  const selectedSubsidiary =
+    selectedRootId && selectedSubsidiaryId
+      ? rootCompany?.subsidiaries.find((s) => s.id === selectedSubsidiaryId) ?? null
+      : null;
 
-  const { logout } = useLogout();
+  const rootProgress = selectedRootId ? getNodeProgress(selectedRootId, tree) : null;
+  const subsidiaryProgress =
+    selectedRootId && selectedSubsidiaryId
+      ? getSubsidiaryProgress(selectedRootId, selectedSubsidiaryId, tree)
+      : null;
 
-  const rootCompanies = rootCompanyIds.map((id) => tree[id]).filter((n): n is CompanyNode => Boolean(n));
+  const currentObjects: InsuranceObject[] = selectedRootId
+    ? selectedSubsidiaryId === null
+      ? (rootCompany?.rootInsuranceObjects ?? [])
+      : (selectedSubsidiary?.insuranceObjects ?? [])
+    : [];
 
-  const handleLogoClick = () => {
-    setSelectedRootId(null);
-    setSelectedNodeId(null);
-    setExpandedObjectId(null);
-    setSubActivePanel(null);
-    setObjActivePanel(null);
-    setSubSearch('');
-    setSubAddName('');
-    setObjSearch('');
-    setObjAddForm({ objectType: 'Fastighet', name: '', description: '' });
-  };
+  const filteredObjects = currentObjects.filter((obj) => {
+    const matchType = objTypeFilter === 'Alla' || obj.objectType === objTypeFilter;
+    const matchSearch = !objSearch || obj.name.toLowerCase().includes(objSearch.toLowerCase());
+    return matchType && matchSearch;
+  });
 
-  const handleToggleFavorite = (id: string) => {
-    setFavorites((prev) => prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]);
-  };
-
-  const handleAddCompany = (name: string) => {
-    const newId = `custom-root-${Date.now()}`;
-    const newNode: CompanyNode = {
-      id: newId,
-      name,
-      parentId: null,
-      childCompanyIds: [],
-      insuranceObjects: [],
-    };
-    setTree((prev) => ({ ...prev, [newId]: newNode }));
-    setRootCompanyIds((prev) => [...prev, newId]);
-  };
-
-  const resetPanels = () => {
-    setSubActivePanel(null);
-    setObjActivePanel(null);
-    setSubSearch('');
-    setSubAddName('');
-    setObjSearch('');
-    setObjAddForm({ objectType: 'Fastighet', name: '', description: '' });
-  };
+  const filteredSubsidiaries =
+    rootCompany?.subsidiaries.filter(
+      (s) => !subSearch || s.name.toLowerCase().includes(subSearch.toLowerCase())
+    ) ?? [];
 
   const handleSelectRoot = (id: string) => {
     setSelectedRootId(id);
-    setSelectedNodeId(id);
+    setSelectedSubsidiaryId(null);
+    setSelectedSubsidiaryIds(new Set());
     setExpandedObjectId(null);
-    resetPanels();
+    setSelectedObjectId(null);
+    setSubPanel(null);
+    setObjPanel(null);
+    setSubSearch('');
+    setObjSearch('');
+    setObjTypeFilter('Alla');
   };
 
-  const handleSelectNode = (id: string) => {
-    setSelectedNodeId(id);
+  const handleSelectSubsidiary = (id: string) => {
+    setSelectedSubsidiaryId(id);
     setExpandedObjectId(null);
-    resetPanels();
+    setSelectedObjectId(null);
+    setObjPanel(null);
+    setObjSearch('');
+    setObjTypeFilter('Alla');
+  };
+
+  const handleBackToRoot = () => {
+    setSelectedSubsidiaryId(null);
+    setExpandedObjectId(null);
+    setSelectedObjectId(null);
+  };
+
+  const handleLogoClick = () => {
+    setSelectedRootId(null);
+    setSelectedSubsidiaryId(null);
+    setSelectedSubsidiaryIds(new Set());
+  };
+
+  const handleToggleFavorite = (id: string) => {
+    setFavorites((prev) =>
+      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
+    );
+  };
+
+  const handleAddRootCompany = (name: string) => {
+    addRootCompany(name);
+    setTree(getTree());
+  };
+
+  const handleAddSubsidiary = () => {
+    if (!selectedRootId || !subAddValue.trim()) return;
+    addSubsidiary(selectedRootId, subAddValue.trim());
+    setTree(getTree());
+    setSubAddValue('');
+    setSubPanel(null);
+  };
+
+  const handleToggleSubsidiarySelect = (id: string) => {
+    setSelectedSubsidiaryIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkDelete = () => {
+    if (!selectedRootId || selectedSubsidiaryIds.size === 0) return;
+    const count = selectedSubsidiaryIds.size;
+    const step1 = window.confirm(
+      `Vill du ta bort ${count === 1 ? 'dotterbolaget' : `${count} dotterbolag`}? Alla tillhörande försäkringsobjekt raderas.`
+    );
+    if (!step1) return;
+    const step2 = window.prompt('Skriv OK för att bekräfta borttagningen.');
+    if (step2 !== 'OK') return;
+    const ids = Array.from(selectedSubsidiaryIds);
+    if (selectedSubsidiaryId && ids.includes(selectedSubsidiaryId)) {
+      setSelectedSubsidiaryId(null);
+    }
+    deleteSubsidiaries(selectedRootId, ids);
+    setTree(getTree());
+    setSelectedSubsidiaryIds(new Set());
+    showToast(`${count === 1 ? 'Dotterbolaget' : `${count} dotterbolag`} borttaget`);
+  };
+
+  const handleAddObject = () => {
+    if (!selectedRootId || !objAddForm.name.trim()) return;
+    addInsuranceObject(selectedRootId, selectedSubsidiaryId, {
+      name: objAddForm.name.trim(),
+      objectType: objAddForm.objectType,
+      description: objAddForm.description.trim(),
+      fieldsTotal: 10,
+      fieldsVerified: 0,
+    });
+    setTree(getTree());
+    setObjAddForm({ objectType: 'Fastighet', name: '', description: '' });
+    setObjPanel(null);
   };
 
   const handleToggleObject = (id: string) => {
     setExpandedObjectId((prev) => (prev === id ? null : id));
+    setSelectedObjectId(id);
   };
 
-  const handleSubPanelToggle = (p: Panel) => {
-    setSubActivePanel((prev) => (prev === p ? null : p));
-    if (p !== 'search') setSubSearch('');
-    if (p !== 'add') setSubAddName('');
+  const handleUpdateObject = (
+    objId: string,
+    patch: Partial<Pick<InsuranceObject, 'name' | 'objectType' | 'description'>>
+  ) => {
+    if (!selectedRootId) return;
+    updateInsuranceObject(selectedRootId, selectedSubsidiaryId, objId, patch);
+    setTree(getTree());
   };
 
-  const handleObjPanelToggle = (p: Panel) => {
-    setObjActivePanel((prev) => (prev === p ? null : p));
-    if (p !== 'search') setObjSearch('');
-    if (p !== 'add') setObjAddForm({ objectType: 'Fastighet', name: '', description: '' });
+  const handleVerifyField = (objId: string) => {
+    if (!selectedRootId) return;
+    incrementFieldVerified(selectedRootId, selectedSubsidiaryId, objId);
+    setTree(getTree());
   };
 
-  const handleConfirmAddSubsidiary = () => {
-    const name = subAddName.trim();
-    if (!name || !selectedNodeId) return;
-    const newNode = addChildNode(selectedNodeId, name);
-    setSubAddName('');
-    setSubActivePanel(null);
-    setSelectedNodeId(newNode.id);
-    setExpandedObjectId(null);
-    setTree({ ...getTree() });
+  const renderSubPanel = () => {
+    if (subPanel === 'search') {
+      return (
+        <div className="px-10 py-2" style={{ borderTop: '1px solid var(--pw-border)' }}>
+          <input
+            autoFocus
+            value={subSearch}
+            onChange={(e) => setSubSearch(e.target.value)}
+            placeholder="Sök dotterbolag…"
+            style={{ ...inputBase, width: '100%' }}
+          />
+        </div>
+      );
+    }
+    if (subPanel === 'add') {
+      return (
+        <div
+          className="px-10 py-3"
+          style={{ borderTop: '1px solid var(--pw-border)', display: 'flex', gap: '8px', alignItems: 'center' }}
+        >
+          <input
+            autoFocus
+            value={subAddValue}
+            onChange={(e) => setSubAddValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleAddSubsidiary();
+              if (e.key === 'Escape') { setSubPanel(null); setSubAddValue(''); }
+            }}
+            placeholder="Dotterbolagsnamn…"
+            style={{ ...inputBase, flex: 1 }}
+          />
+          <button
+            onClick={handleAddSubsidiary}
+            disabled={!subAddValue.trim()}
+            style={{
+              ...inputBase,
+              cursor: subAddValue.trim() ? 'pointer' : 'default',
+              opacity: subAddValue.trim() ? 1 : 0.5,
+              padding: '4px 12px',
+            }}
+          >
+            Lägg till
+          </button>
+          <button
+            onClick={() => { setSubPanel(null); setSubAddValue(''); }}
+            style={{ fontSize: '12px', color: 'var(--pw-text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            Avbryt
+          </button>
+        </div>
+      );
+    }
+    return null;
   };
 
-  const handleConfirmAddObject = () => {
-    const valid = objAddForm.objectType.trim() !== '' || objAddForm.name.trim() !== '' || objAddForm.description.trim() !== '';
-    if (!valid || !selectedNodeId) return;
-    addInsuranceObject(
-      selectedNodeId,
-      objAddForm.name.trim(),
-      objAddForm.objectType.trim() || 'Fastighet',
-      objAddForm.description.trim(),
-    );
-    setObjAddForm({ objectType: 'Fastighet', name: '', description: '' });
-    setObjActivePanel(null);
-    setTree({ ...getTree() });
+  const renderObjPanel = () => {
+    if (objPanel === 'search') {
+      return (
+        <div
+          className="px-10 py-2 flex items-center gap-3"
+          style={{ borderTop: '1px solid var(--pw-border)' }}
+        >
+          <input
+            autoFocus
+            value={objSearch}
+            onChange={(e) => setObjSearch(e.target.value)}
+            placeholder="Sök objekt…"
+            style={{ ...inputBase, flex: 1 }}
+          />
+          <select
+            value={objTypeFilter}
+            onChange={(e) => setObjTypeFilter(e.target.value)}
+            style={{ ...inputBase }}
+          >
+            <option value="Alla">Alla typer</option>
+            {OBJECT_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+      );
+    }
+    if (objPanel === 'add') {
+      return (
+        <div
+          className="px-10 py-3"
+          style={{ borderTop: '1px solid var(--pw-border)', display: 'flex', gap: '8px', alignItems: 'flex-end', flexWrap: 'wrap' }}
+        >
+          <select
+            value={objAddForm.objectType}
+            onChange={(e) => setObjAddForm((f) => ({ ...f, objectType: e.target.value }))}
+            style={{ ...inputBase, width: '120px' }}
+          >
+            {OBJECT_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <input
+            autoFocus
+            value={objAddForm.name}
+            onChange={(e) => setObjAddForm((f) => ({ ...f, name: e.target.value }))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleAddObject();
+              if (e.key === 'Escape') setObjPanel(null);
+            }}
+            placeholder="Objektnamn…"
+            style={{ ...inputBase, flex: 1, minWidth: '160px' }}
+          />
+          <input
+            value={objAddForm.description}
+            onChange={(e) => setObjAddForm((f) => ({ ...f, description: e.target.value }))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleAddObject();
+              if (e.key === 'Escape') setObjPanel(null);
+            }}
+            placeholder="Beskrivning…"
+            style={{ ...inputBase, flex: 2, minWidth: '200px' }}
+          />
+          <button
+            onClick={handleAddObject}
+            disabled={!objAddForm.name.trim()}
+            style={{
+              ...inputBase,
+              cursor: objAddForm.name.trim() ? 'pointer' : 'default',
+              opacity: objAddForm.name.trim() ? 1 : 0.5,
+              padding: '4px 12px',
+            }}
+          >
+            Lägg till
+          </button>
+          <button
+            onClick={() => setObjPanel(null)}
+            style={{ fontSize: '12px', color: 'var(--pw-text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
+          >
+            Avbryt
+          </button>
+        </div>
+      );
+    }
+    return null;
   };
 
-  const handleVerifyField = (nodeId: string, objectId: string) => {
-    const updated = incrementFieldVerified(nodeId, objectId);
-    setTree({ ...updated });
-  };
-
-  const currentNode = selectedNodeId ? tree[selectedNodeId] : null;
-
-  const childNodes = currentNode
-    ? currentNode.childCompanyIds.map((id) => tree[id]).filter((n): n is CompanyNode => Boolean(n))
-    : [];
-
-  const filteredChildren = (() => {
-    let list = [...childNodes];
-    if (subSearch) list = list.filter((n) => n.name.toLowerCase().includes(subSearch.toLowerCase()));
-    if (subSort === 'az') list.sort((a, b) => a.name.localeCompare(b.name, 'sv', { sensitivity: 'base' }));
-    if (subSort === 'za') list.sort((a, b) => b.name.localeCompare(a.name, 'sv', { sensitivity: 'base' }));
-    return list;
-  })();
-
-  const currentObjects = currentNode ? currentNode.insuranceObjects : [];
-
-  const filteredObjects = (() => {
-    let list = [...currentObjects];
-    const q = objSearch.toLowerCase();
-    if (q) list = list.filter((o) =>
-      o.name.toLowerCase().includes(q) ||
-      o.objectType.toLowerCase().includes(q) ||
-      o.description.toLowerCase().includes(q)
-    );
-    if (objTypeFilter !== 'Alla') list = list.filter((o) => o.objectType === objTypeFilter);
-    if (objSort === 'az') list.sort((a, b) => a.name.localeCompare(b.name, 'sv', { sensitivity: 'base' }));
-    if (objSort === 'za') list.sort((a, b) => b.name.localeCompare(a.name, 'sv', { sensitivity: 'base' }));
-    if (objSort === 'pct_desc') list.sort((a, b) => b.completedPct - a.completedPct);
-    if (objSort === 'pct_asc') list.sort((a, b) => a.completedPct - b.completedPct);
-    return list;
-  })();
-
-  const path = selectedNodeId ? getPathToNode(selectedNodeId) : [];
-  const rootNode = selectedRootId ? tree[selectedRootId] : null;
-  const rootProgress = selectedRootId ? getNodeProgress(selectedRootId, tree) : null;
-  const subsProgress = selectedNodeId ? getNodeProgress(selectedNodeId, tree) : null;
-  const objsProgress = selectedNodeId ? getDirectObjectsProgress(selectedNodeId, tree) : null;
-
-  const subPanelContent = (
-    subActivePanel === 'search' ? (
-      <SubSearchPanel value={subSearch} onChange={setSubSearch} autoFocusRef={subSearchInputRef} />
-    ) : subActivePanel === 'add' ? (
-      <SubAddPanel
-        value={subAddName}
-        onChange={setSubAddName}
-        onConfirm={handleConfirmAddSubsidiary}
-        autoFocusRef={subAddInputRef}
-      />
-    ) : subActivePanel === 'filter' ? (
-      <SubFilterPanel sortVal={subSort} onSort={setSubSort} />
-    ) : null
+  const SectionToolbar = ({
+    title,
+    count,
+    panel,
+    onPanelToggle,
+    showDelete,
+    onDelete,
+  }: {
+    title: string;
+    count: number;
+    panel: Panel;
+    onPanelToggle: (p: Panel) => void;
+    showDelete?: boolean;
+    onDelete?: () => void;
+  }) => (
+    <div
+      className="flex items-center justify-between px-10 py-2"
+      style={{ borderBottom: '1px solid var(--pw-border)' }}
+    >
+      <span style={{ fontWeight: 500, color: 'var(--pw-text-primary)', fontSize: '14px' }}>
+        {title}{' '}
+        <span className="text-xs ml-1" style={{ color: 'var(--pw-text-tertiary)', fontWeight: 400 }}>{count}</span>
+      </span>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onPanelToggle(panel === 'search' ? null : 'search')}
+          style={{ ...iStyle, color: panel === 'search' ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)' }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; e.currentTarget.style.color = 'var(--pw-text-primary)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = panel === 'search' ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)'; }}
+          title="Sök"
+        >
+          <Search size={14} />
+        </button>
+        <button
+          onClick={() => onPanelToggle(panel === 'add' ? null : 'add')}
+          style={{ ...iStyle, color: panel === 'add' ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)' }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; e.currentTarget.style.color = 'var(--pw-text-primary)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = panel === 'add' ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)'; }}
+          title="Lägg till"
+        >
+          <Plus size={14} />
+        </button>
+        {showDelete && (
+          <button
+            onClick={onDelete}
+            disabled={selectedSubsidiaryIds.size === 0}
+            style={{
+              ...iStyle,
+              color: selectedSubsidiaryIds.size > 0 ? '#E5483F' : 'var(--pw-text-tertiary)',
+              opacity: selectedSubsidiaryIds.size > 0 ? 1 : 0.3,
+            }}
+            onMouseEnter={(e) => {
+              if (selectedSubsidiaryIds.size > 0) {
+                e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)';
+                e.currentTarget.style.color = '#C83B34';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = selectedSubsidiaryIds.size > 0 ? '#E5483F' : 'var(--pw-text-tertiary)';
+            }}
+            title="Radera markerade"
+          >
+            <Trash2 size={14} />
+          </button>
+        )}
+      </div>
+    </div>
   );
 
-  const objPanelContent = (
-    objActivePanel === 'search' ? (
-      <ObjSearchPanel value={objSearch} onChange={setObjSearch} autoFocusRef={objSearchInputRef} />
-    ) : objActivePanel === 'add' ? (
-      <ObjAddPanel
-        form={objAddForm}
-        onChange={setObjAddForm}
-        onConfirm={handleConfirmAddObject}
-        typeRef={objAddTypeRef}
-      />
-    ) : objActivePanel === 'filter' ? (
-      <ObjFilterPanel
-        sortVal={objSort}
-        onSort={setObjSort}
-        typeFilter={objTypeFilter}
-        onTypeFilter={setObjTypeFilter}
-      />
-    ) : null
+  const renderBreadcrumb = () => {
+    if (!rootCompany) return null;
+    return (
+      <div className="flex items-center gap-1.5 flex-wrap mb-6">
+        {selectedSubsidiary ? (
+          <>
+            <button
+              onClick={handleBackToRoot}
+              className="text-sm transition-colors"
+              style={{ color: 'var(--pw-text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--pw-text-primary)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--pw-text-secondary)')}
+            >
+              {rootCompany.name}
+            </button>
+            <span className="text-sm" style={{ color: 'var(--pw-text-tertiary)' }}>/</span>
+            <span className="text-sm" style={{ color: 'var(--pw-text-primary)', fontWeight: 500 }}>
+              {selectedSubsidiary.name}
+            </span>
+          </>
+        ) : (
+          <span className="text-sm" style={{ color: 'var(--pw-text-primary)', fontWeight: 500 }}>
+            {rootCompany.name}
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  const renderHome = () => (
+    <div className="flex items-center justify-center h-full" style={{ minHeight: '200px' }}>
+      <p style={{ color: 'var(--pw-text-tertiary)', fontSize: '14px' }}>
+        Välj ett moderbolag i panelen till vänster för att komma igång.
+      </p>
+    </div>
   );
+
+  const renderRootView = () => {
+    if (!rootCompany || !selectedRootId) return null;
+    const subCount = rootCompany.subsidiaries.length;
+    const objCount = currentObjects.length;
+
+    return (
+      <div>
+        <div className="px-10 pt-8 pb-4" style={{ borderBottom: '1px solid var(--pw-border)' }}>
+          <div className="flex items-center justify-between mb-1">
+            <h1 style={{ color: 'var(--pw-text-primary)', fontSize: '26px', fontWeight: 500, lineHeight: 1.2 }}>
+              {rootCompany.name}
+            </h1>
+            {rootProgress && <ProgressPill pct={rootProgress.pct} showPct={true} barWidth={100} />}
+          </div>
+          {rootCompany.orgnr && (
+            <div className="mb-2">
+              <CopyChip text={rootCompany.orgnr} label="Orgnr" onCopied={() => showToast('Orgnr kopierat')} />
+            </div>
+          )}
+          {renderBreadcrumb()}
+        </div>
+
+        <div style={{ borderBottom: '1px solid var(--pw-border)' }}>
+          <SectionToolbar
+            title="Dotterbolag"
+            count={subCount}
+            panel={subPanel}
+            onPanelToggle={setSubPanel}
+            showDelete={true}
+            onDelete={handleBulkDelete}
+          />
+          {renderSubPanel()}
+
+          <div
+            className="px-10 py-1.5 grid"
+            style={{ gridTemplateColumns: 'auto 1fr auto 140px', gap: '0 8px', borderBottom: '1px solid var(--pw-border)' }}
+          >
+            <div />
+            <span className="text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>Namn</span>
+            <div />
+            <span className="text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>Färdigställt</span>
+          </div>
+
+          {filteredSubsidiaries.length === 0 ? (
+            <p className="text-xs px-10 py-3" style={{ color: 'var(--pw-text-tertiary)' }}>
+              {subSearch ? 'Inga träffar' : 'Inga dotterbolag'}
+            </p>
+          ) : (
+            filteredSubsidiaries.map((sub) => {
+              const isSelected = selectedSubsidiaryId === sub.id;
+              const isChecked = selectedSubsidiaryIds.has(sub.id);
+              const prog = getSubsidiaryProgress(selectedRootId, sub.id, tree);
+              return (
+                <div
+                  key={sub.id}
+                  className="grid items-center px-10 py-2 transition-colors cursor-pointer"
+                  style={{
+                    gridTemplateColumns: 'auto 1fr auto 140px',
+                    gap: '0 8px',
+                    backgroundColor: isSelected ? 'var(--pw-bg-tertiary)' : 'transparent',
+                    borderLeft: isSelected ? '2px solid var(--pw-accent-red)' : '2px solid transparent',
+                  }}
+                  onClick={() => handleSelectSubsidiary(sub.id)}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => {}}
+                    onClick={(e) => { e.stopPropagation(); handleToggleSubsidiarySelect(sub.id); }}
+                    style={{ cursor: 'pointer', accentColor: 'var(--pw-accent-red)', flexShrink: 0, marginRight: '4px' }}
+                  />
+                  <span
+                    className="text-sm truncate"
+                    style={{
+                      color: isSelected ? 'var(--pw-text-primary)' : 'var(--pw-text-secondary)',
+                      fontWeight: isSelected ? 500 : 400,
+                    }}
+                  >
+                    {sub.name}
+                  </span>
+                  {sub.orgnr ? (
+                    <CopyChip text={sub.orgnr} label="Orgnr" onCopied={() => showToast('Orgnr kopierat')} />
+                  ) : (
+                    <div />
+                  )}
+                  <ProgressPill pct={prog.pct} showPct={false} />
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <div>
+          <SectionToolbar
+            title="Försäkringsobjekt"
+            count={objCount}
+            panel={objPanel}
+            onPanelToggle={setObjPanel}
+          />
+          {renderObjPanel()}
+          <div ref={objListRef}>
+            <ObjectListView
+              objects={filteredObjects}
+              expandedObjectId={expandedObjectId}
+              selectedObjectId={selectedObjectId}
+              onToggleObject={handleToggleObject}
+              onUpdateObject={handleUpdateObject}
+              onVerifyField={handleVerifyField}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderSubsidiaryView = () => {
+    if (!rootCompany || !selectedSubsidiary || !selectedRootId) return null;
+    const objCount = currentObjects.length;
+
+    return (
+      <div>
+        <div className="px-10 pt-8 pb-4" style={{ borderBottom: '1px solid var(--pw-border)' }}>
+          <div className="flex items-center justify-between mb-1">
+            <h1 style={{ color: 'var(--pw-text-primary)', fontSize: '26px', fontWeight: 500, lineHeight: 1.2 }}>
+              {selectedSubsidiary.name}
+            </h1>
+            {subsidiaryProgress && (
+              <ProgressPill pct={subsidiaryProgress.pct} showPct={true} barWidth={100} />
+            )}
+          </div>
+          {selectedSubsidiary.orgnr && (
+            <div className="mb-2">
+              <CopyChip
+                text={selectedSubsidiary.orgnr}
+                label="Orgnr"
+                onCopied={() => showToast('Orgnr kopierat')}
+              />
+            </div>
+          )}
+          {renderBreadcrumb()}
+        </div>
+
+        <div>
+          <SectionToolbar
+            title="Försäkringsobjekt"
+            count={objCount}
+            panel={objPanel}
+            onPanelToggle={setObjPanel}
+          />
+          {renderObjPanel()}
+          <div ref={objListRef}>
+            <ObjectListView
+              objects={filteredObjects}
+              expandedObjectId={expandedObjectId}
+              selectedObjectId={selectedObjectId}
+              onToggleObject={handleToggleObject}
+              onUpdateObject={handleUpdateObject}
+              onVerifyField={handleVerifyField}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const mainContent = !selectedRootId
+    ? renderHome()
+    : selectedSubsidiaryId
+    ? renderSubsidiaryView()
+    : renderRootView();
 
   return (
     <>
-    <WorkspaceToast message={toastMessage} isVisible={toastVisible} />
-    <WorkspaceShell
-      sidebar={
-        <WorkspaceSidebar
-          companies={rootCompanies.map((c) => c.id)}
-          companyNames={Object.fromEntries(rootCompanies.map((c) => [c.id, c.name]))}
-          selectedCompany={selectedRootId}
-          onSelectCompany={handleSelectRoot}
-          favorites={favorites}
-          onToggleFavorite={handleToggleFavorite}
-          searchValue={sidebarSearch}
-          onSearchChange={setSidebarSearch}
-          onLogout={logout}
-          onLogoClick={handleLogoClick}
-          onAddCompany={handleAddCompany}
-          tree={tree}
-        />
-      }
-    >
-      {!selectedRootId ? (
-        <div className="px-10 py-8 max-w-xl">
-          <div
-            className="rounded-lg p-6"
-            style={{
-              backgroundColor: 'var(--pw-bg-secondary)',
-              border: '1px solid var(--pw-border)',
-            }}
-          >
-            <p className="text-sm" style={{ color: 'var(--pw-text-secondary)', lineHeight: '1.6' }}>
-              Välj ett moderbolag i panelen till vänster för att komma igång.
-            </p>
-          </div>
+      <WorkspaceToast message={toastMessage} isVisible={toastVisible} />
+      <WorkspaceShell
+        sidebar={
+          <WorkspaceSidebar
+            companies={allRootIds}
+            companyNames={rootCompanyNames}
+            selectedCompany={selectedRootId}
+            onSelectCompany={handleSelectRoot}
+            favorites={favorites}
+            onToggleFavorite={handleToggleFavorite}
+            searchValue={sidebarSearch}
+            onSearchChange={setSidebarSearch}
+            onLogout={logout}
+            onLogoClick={handleLogoClick}
+            onAddCompany={handleAddRootCompany}
+            tree={tree}
+          />
+        }
+      >
+        <div style={{ flex: 1, overflowY: 'auto', backgroundColor: 'var(--pw-bg-primary)' }}>
+          {mainContent}
         </div>
-      ) : (
-        <div className="flex flex-col">
-          <div
-            className="px-10 pt-8 pb-4"
-            style={{ borderBottom: '1px solid var(--pw-border)' }}
-          >
-            <div className="flex items-center justify-between mb-1">
-              <h1
-                className="truncate"
-                style={{ color: 'var(--pw-text-primary)', fontSize: '26px', fontWeight: 500, lineHeight: 1.2 }}
-              >
-                {rootNode?.name ?? ''}
-              </h1>
-              {rootProgress && (
-                <ProgressPill pct={rootProgress.pct} showPct={true} barWidth={100} />
-              )}
-            </div>
-            {rootNode?.orgnr && (
-              <div className="mb-2">
-                <CopyChip
-                  text={rootNode.orgnr}
-                  label="Orgnr"
-                  onCopied={() => showToast('Orgnr kopierat')}
-                />
-              </div>
-            )}
-            <WorkspaceHeader
-              path={path.map((n) => ({ id: n.id, name: n.name }))}
-              onSelectNode={handleSelectNode}
-            />
-          </div>
-
-          <div className="mb-2">
-            <SectionHeader
-              title="Dotterbolag"
-              count={childNodes.length}
-              isOpen={isSubsidiariesOpen}
-              onToggle={() => setIsSubsidiariesOpen((v) => !v)}
-              progress={subsProgress?.pct ?? 0}
-              activePanel={subActivePanel}
-              onPanelToggle={handleSubPanelToggle}
-              panelContent={subPanelContent}
-              headerRef={subHeaderRef}
-            />
-
-            {isSubsidiariesOpen && (
-              <div>
-                {filteredChildren.length === 0 ? (
-                  <p className="text-xs px-10 py-2" style={{ color: 'var(--pw-text-tertiary)' }}>
-                    {subSearch ? 'Inga träffar' : 'Inga dotterbolag'}
-                  </p>
-                ) : (
-                  filteredChildren.map((node) => {
-                    const isSelected = selectedNodeId === node.id;
-                    const progress = getNodeProgress(node.id, tree);
-                    return (
-                      <div
-                        key={node.id}
-                        onClick={() => handleSelectNode(node.id)}
-                        className="w-full flex items-center gap-3 px-10 py-2 text-sm transition-colors cursor-pointer"
-                        style={{
-                          backgroundColor: isSelected ? 'var(--pw-bg-tertiary)' : 'transparent',
-                          color: 'var(--pw-text-primary)',
-                          borderLeft: isSelected ? '2px solid var(--pw-accent-red)' : '2px solid transparent',
-                          fontWeight: isSelected ? 500 : 400,
-                        }}
-                        onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; }}
-                        onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent'; }}
-                      >
-                        <span className="flex-1">{node.name}</span>
-                        {node.orgnr && (
-                          <CopyChip
-                            text={node.orgnr}
-                            label="Orgnr"
-                            onCopied={() => showToast('Orgnr kopierat')}
-                          />
-                        )}
-                        <ProgressPill pct={progress.pct} showPct={false} />
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="mb-2">
-            <SectionHeader
-              title="Försäkringsobjekt"
-              count={currentObjects.length}
-              isOpen={isObjectsOpen}
-              onToggle={() => setIsObjectsOpen((v) => !v)}
-              progress={objsProgress?.pct ?? 0}
-              activePanel={objActivePanel}
-              onPanelToggle={handleObjPanelToggle}
-              panelContent={objPanelContent}
-              headerRef={objHeaderRef}
-            />
-
-            {isObjectsOpen && (
-              <ObjectListView
-                objects={filteredObjects}
-                expandedObjectId={expandedObjectId}
-                onToggleObject={handleToggleObject}
-                nodeId={selectedNodeId!}
-                onVerifyField={handleVerifyField}
-              />
-            )}
-          </div>
-        </div>
-      )}
-    </WorkspaceShell>
+      </WorkspaceShell>
     </>
   );
 };

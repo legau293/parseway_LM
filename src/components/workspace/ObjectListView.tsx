@@ -1,89 +1,70 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 import { InsuranceObject } from '@/data/mockOrgTree';
 import ObjectRow, { ObjectListHeader } from './ObjectRow';
-
-type SortKey = 'objectType' | 'name' | 'description' | 'completedPct';
-type SortDir = 'asc' | 'desc';
 
 interface ObjectListViewProps {
   objects: InsuranceObject[];
   expandedObjectId: string | null;
+  selectedObjectId: string | null;
   onToggleObject: (id: string) => void;
-  nodeId: string;
-  onVerifyField: (nodeId: string, objectId: string) => void;
+  onUpdateObject: (id: string, patch: Partial<Pick<InsuranceObject, 'name' | 'objectType' | 'description'>>) => void;
+  onVerifyField: (objId: string) => void;
 }
 
 const ThreeColumnDropdown = ({
   object,
-  nodeId,
   onVerifyField,
 }: {
   object: InsuranceObject;
-  nodeId: string;
-  onVerifyField: (nodeId: string, objectId: string) => void;
+  onVerifyField: (objId: string) => void;
 }) => {
   const remaining = object.fieldsTotal - object.fieldsVerified;
   return (
     <div style={{ borderTop: '1px solid var(--pw-border)', borderBottom: '1px solid var(--pw-border)' }}>
-      <div className="grid grid-cols-3">
-        {(['Struktur', 'Hänvisning', 'Dokument'] as const).map((col, i) => (
-          <div
-            key={col}
-            className="px-6 py-2 text-xs"
+      <div
+        className="grid px-4 py-4"
+        style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: '0 24px' }}
+      >
+        <div>
+          <p className="text-xs font-medium mb-2" style={{ color: 'var(--pw-text-secondary)' }}>
+            Struktur
+          </p>
+          <p className="text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>
+            {object.fieldsVerified} av {object.fieldsTotal} fält verifierade
+          </p>
+          {remaining > 0 && (
+            <p className="text-xs mt-1" style={{ color: 'var(--pw-text-tertiary)' }}>
+              {remaining} återstår
+            </p>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); onVerifyField(object.id); }}
+            disabled={remaining === 0}
+            className="mt-2 text-xs px-2 py-0.5 rounded transition-colors"
             style={{
-              color: 'var(--pw-text-tertiary)',
-              fontWeight: 500,
-              borderRight: i < 2 ? '1px solid var(--pw-border)' : undefined,
-              borderBottom: '1px solid var(--pw-border)',
+              border: '1px solid var(--pw-border)',
+              color: remaining > 0 ? 'var(--pw-text-secondary)' : 'var(--pw-text-tertiary)',
+              backgroundColor: 'transparent',
+              cursor: remaining > 0 ? 'pointer' : 'default',
+              opacity: remaining > 0 ? 1 : 0.4,
             }}
+            onMouseEnter={(e) => { if (remaining > 0) e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
-            {col}
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-3">
-        <div className="px-6 py-4" style={{ borderRight: '1px solid var(--pw-border)' }}>
-          <p className="text-xs mb-1" style={{ color: 'var(--pw-text-secondary)' }}>Strukturgrad</p>
-          <p className="text-sm" style={{ color: 'var(--pw-text-primary)', fontWeight: 500 }}>{object.structurePct}%</p>
-          <p className="text-xs mt-2" style={{ color: 'var(--pw-text-tertiary)' }}>Byggnadsår, yta, konstruktion</p>
+            Verifiera fält
+          </button>
         </div>
-        <div className="px-6 py-4" style={{ borderRight: '1px solid var(--pw-border)' }}>
-          <p className="text-xs mb-1" style={{ color: 'var(--pw-text-secondary)' }}>Verifierade fält</p>
-          <p className="text-sm" style={{ color: 'var(--pw-text-primary)', fontWeight: 500 }}>
-            {object.fieldsVerified} / {object.fieldsTotal}
+        <div>
+          <p className="text-xs font-medium mb-2" style={{ color: 'var(--pw-text-secondary)' }}>
+            Hänvisning
           </p>
-          <div className="mt-3">
-            {remaining > 0 ? (
-              <button
-                onClick={() => onVerifyField(nodeId, object.id)}
-                className="text-xs px-2 py-1 rounded transition-colors"
-                style={{
-                  border: '1px solid var(--pw-border)',
-                  color: 'var(--pw-text-secondary)',
-                  backgroundColor: 'transparent',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--pw-accent-red)';
-                  e.currentTarget.style.color = 'var(--pw-text-primary)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--pw-border)';
-                  e.currentTarget.style.color = 'var(--pw-text-secondary)';
-                }}
-              >
-                Markera 1 fält som verifierat
-              </button>
-            ) : (
-              <span className="text-xs" style={{ color: '#2DB7A3' }}>Alla fält verifierade</span>
-            )}
-          </div>
+          <p className="text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>Inga hänvisningar</p>
         </div>
-        <div className="px-6 py-4">
-          <p className="text-xs mb-1" style={{ color: 'var(--pw-text-secondary)' }}>Saknade dokument</p>
-          <p className="text-sm" style={{ color: object.missingCount > 0 ? 'var(--pw-accent-red)' : 'var(--pw-text-primary)', fontWeight: 500 }}>
-            {object.missingCount}
+        <div>
+          <p className="text-xs font-medium mb-2" style={{ color: 'var(--pw-text-secondary)' }}>
+            Dokument
           </p>
-          <p className="text-xs mt-2" style={{ color: 'var(--pw-text-tertiary)' }}>Ritningar, certifikat</p>
+          <p className="text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>Inga dokument</p>
         </div>
       </div>
     </div>
@@ -93,63 +74,34 @@ const ThreeColumnDropdown = ({
 const ObjectListView = ({
   objects,
   expandedObjectId,
+  selectedObjectId,
   onToggleObject,
-  nodeId,
+  onUpdateObject,
   onVerifyField,
 }: ObjectListViewProps) => {
-  const [sortKey, setSortKey] = useState<SortKey>('name');
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
-
-  const handleSort = (key: SortKey) => {
-    if (key === sortKey) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key);
-      setSortDir('asc');
-    }
-  };
-
-  const sorted = useMemo(() => {
-    return [...objects].sort((a, b) => {
-      let av: string | number = a[sortKey];
-      let bv: string | number = b[sortKey];
-      if (typeof av === 'string') av = av.toLowerCase();
-      if (typeof bv === 'string') bv = bv.toLowerCase();
-      if (av < bv) return sortDir === 'asc' ? -1 : 1;
-      if (av > bv) return sortDir === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }, [objects, sortKey, sortDir]);
-
-  if (sorted.length === 0) {
+  if (objects.length === 0) {
     return (
-      <p className="text-xs px-4 py-4" style={{ color: 'var(--pw-text-tertiary)' }}>
-        Inga objekt matchar filtret.
+      <p className="text-xs px-4 py-3" style={{ color: 'var(--pw-text-tertiary)' }}>
+        Inga försäkringsobjekt
       </p>
     );
   }
 
   return (
     <div>
-      <div className="flex items-center gap-3 px-4 py-1.5" style={{ borderBottom: '1px solid var(--pw-border)' }}>
-        <span className="ml-auto text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>
-          {sorted.length} objekt
-        </span>
-      </div>
-
-      <ObjectListHeader sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-
-      {sorted.map((obj) => (
+      <ObjectListHeader />
+      {objects.map((obj) => (
         <React.Fragment key={obj.id}>
           <ObjectRow
             object={obj}
             isExpanded={expandedObjectId === obj.id}
+            isSelected={selectedObjectId === obj.id}
             onClick={() => onToggleObject(obj.id)}
+            onUpdate={(patch) => onUpdateObject(obj.id, patch)}
           />
           {expandedObjectId === obj.id && (
             <ThreeColumnDropdown
               object={obj}
-              nodeId={nodeId}
               onVerifyField={onVerifyField}
             />
           )}
