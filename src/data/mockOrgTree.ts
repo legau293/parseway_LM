@@ -92,6 +92,31 @@ const maskinParams = (): ObjectParameter[] => [
   { id: 'leverantör', label: 'Leverantör', value: 'ABB Industrial', status: 'verified', reference: { filename: 'Maskinspecifikation.pdf', section: 'Identifikation', excerpt: 'Tillverkare och leverantör: ABB Industrial, Sverige.', pageHint: 1 } },
 ];
 
+const bilParams = (): ObjectParameter[] => [
+  { id: 'registreringsnr', label: 'Registreringsnr', value: 'ABC 123', status: 'verified', reference: { filename: 'Fordonsregister_2024.pdf', section: 'Registreringsuppgifter', excerpt: 'Registreringsnummer: ABC 123, registrerat i Transportstyrelens fordonsregister.', pageHint: 1 } },
+  { id: 'årsmodell', label: 'Årsmodell', value: '2021', status: 'verified', reference: { filename: 'Fordonsregister_2024.pdf', section: 'Tekniska uppgifter', excerpt: 'Årsmodell 2021, första registreringsdatum 2021-03-15.', pageHint: 1 } },
+  { id: 'märke-modell', label: 'Märke / Modell', value: 'Volvo FH 500', status: 'ai', reference: { filename: 'Fordonsregister_2024.pdf', section: 'Fordonsbeskrivning', excerpt: 'Märke: Volvo, modell: FH 500, kategori: tung lastbil.', pageHint: 2 } },
+  { id: 'mätarställning', label: 'Mätarställning (km)', value: '148 000', status: 'ai', reference: { filename: 'Servicerapport_2024.pdf', section: 'Körsträcka', excerpt: 'Avläst mätarställning vid senaste service: 148 000 km.', pageHint: 1 } },
+  { id: 'bränsle', label: 'Bränsle', value: 'Diesel', status: 'verified', reference: { filename: 'Fordonsregister_2024.pdf', section: 'Tekniska uppgifter', excerpt: 'Drivmedel: Diesel, euro 6-klassad motor.', pageHint: 2 } },
+  { id: 'ägare', label: 'Ägare', value: '', status: 'missing' },
+  { id: 'inköpspris', label: 'Inköpspris (kr)', value: '1 850 000', status: 'ai', reference: { filename: 'Inköpsorder_2021.pdf', section: 'Orderbekräftelse', excerpt: 'Godkänt inköpspris: 1 850 000 kr exkl. moms.', pageHint: 1 } },
+  { id: 'försäkringsvärde', label: 'Försäkringsvärde (kr)', value: '', status: 'missing' },
+];
+
+function ensureParameters(obj: InsuranceObject): InsuranceObject {
+  if (obj.parameters && obj.parameters.length > 0) return obj;
+  let parameters: ObjectParameter[];
+  if (obj.objectType === 'Maskin') {
+    parameters = maskinParams();
+  } else if (obj.objectType === 'Bil') {
+    parameters = bilParams();
+  } else {
+    parameters = fastighetParams();
+  }
+  const verifiedCount = parameters.filter((p) => p.status === 'verified').length;
+  return { ...obj, parameters, fieldsTotal: parameters.length, fieldsVerified: verifiedCount };
+}
+
 const buildInitialTree = (): OrgTree => ({
   'volvo-ab': {
     id: 'volvo-ab', name: 'Volvo AB', orgnr: '556012-5790',
@@ -257,7 +282,22 @@ const buildInitialTree = (): OrgTree => ({
   },
 });
 
-let _tree: OrgTree = buildInitialTree();
+function applyEnsureParameters(tree: OrgTree): OrgTree {
+  const result: OrgTree = {};
+  for (const [id, company] of Object.entries(tree)) {
+    result[id] = {
+      ...company,
+      rootInsuranceObjects: company.rootInsuranceObjects.map(ensureParameters),
+      subsidiaries: company.subsidiaries.map((s) => ({
+        ...s,
+        insuranceObjects: s.insuranceObjects.map(ensureParameters),
+      })),
+    };
+  }
+  return result;
+}
+
+let _tree: OrgTree = applyEnsureParameters(buildInitialTree());
 
 export const ROOT_COMPANY_IDS = Object.keys(buildInitialTree());
 
@@ -310,7 +350,7 @@ export function addInsuranceObject(
 ): InsuranceObject {
   const root = _tree[rootId];
   if (!root) throw new Error('Root not found');
-  const newObj: InsuranceObject = { ...obj, id: obj.name + '-' + Date.now() };
+  const newObj: InsuranceObject = ensureParameters({ ...obj, id: obj.name + '-' + Date.now() });
   if (subsidiaryId === null) {
     _tree = {
       ..._tree,
