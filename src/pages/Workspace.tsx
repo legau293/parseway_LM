@@ -17,7 +17,9 @@ import {
   addInsuranceObject,
   incrementFieldVerified,
   updateInsuranceObject,
+  updateObjectParameter,
   InsuranceObject,
+  ParameterStatus,
 } from '@/data/mockOrgTree';
 import {
   getNodeProgress,
@@ -573,6 +575,16 @@ const Workspace = () => {
     setTree(getTree());
   };
 
+  const handleUpdateParameter = (
+    objId: string,
+    paramId: string,
+    patch: { value?: string; status?: ParameterStatus }
+  ) => {
+    if (!selectedRootId) return;
+    updateObjectParameter(selectedRootId, selectedSubsidiaryId, objId, paramId, patch);
+    setTree(getTree());
+  };
+
 
   const renderHome = () => (
     <div className="flex items-center justify-center h-full" style={{ minHeight: '200px' }}>
@@ -726,6 +738,7 @@ const Workspace = () => {
               onToggleObjectSelect={handleToggleObjectSelect}
               onUpdateObject={handleUpdateObject}
               onVerifyField={handleVerifyField}
+              onUpdateParameter={handleUpdateParameter}
               showCheckboxes={true}
               sortColumn={objSortColumn}
               sortDirection={objSortDirection}
@@ -809,6 +822,7 @@ const Workspace = () => {
               onToggleObjectSelect={handleToggleObjectSelect}
               onUpdateObject={handleUpdateObject}
               onVerifyField={handleVerifyField}
+              onUpdateParameter={handleUpdateParameter}
               showCheckboxes={true}
               sortColumn={objSortColumn}
               sortDirection={objSortDirection}

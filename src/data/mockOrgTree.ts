@@ -1,3 +1,20 @@
+export type ParameterStatus = 'missing' | 'ai' | 'verified';
+
+export interface ParameterReference {
+  filename: string;
+  section: string;
+  excerpt: string;
+  pageHint?: number;
+}
+
+export interface ObjectParameter {
+  id: string;
+  label: string;
+  value: string;
+  status: ParameterStatus;
+  reference?: ParameterReference;
+}
+
 export interface InsuranceObject {
   id: string;
   name: string;
@@ -5,6 +22,7 @@ export interface InsuranceObject {
   description: string;
   fieldsTotal: number;
   fieldsVerified: number;
+  parameters?: ObjectParameter[];
 }
 
 export interface Subsidiary {
@@ -24,6 +42,56 @@ export interface RootCompany {
 
 export type OrgTree = Record<string, RootCompany>;
 
+const fastighetParams = (overrides: Partial<ObjectParameter>[] = []): ObjectParameter[] => {
+  const base: ObjectParameter[] = [
+    {
+      id: 'byggår', label: 'Byggår', value: '1998', status: 'verified',
+      reference: { filename: 'Fastighetsdokumentation_2023.pdf', section: 'Avsnitt 2 – Byggnadsbeskrivning', excerpt: 'Byggnaden uppfördes år 1998 och genomgick en större renovering 2012.', pageHint: 4 },
+    },
+    {
+      id: 'area', label: 'Area (m²)', value: '8 400', status: 'verified',
+      reference: { filename: 'Fastighetsdokumentation_2023.pdf', section: 'Avsnitt 3 – Ytor och volymer', excerpt: 'Total bruttoarea uppgår till 8 400 m² fördelat på fyra plan.', pageHint: 6 },
+    },
+    {
+      id: 'adress', label: 'Adress', value: 'Torslandavägen 12, 418 34 Göteborg', status: 'ai',
+      reference: { filename: 'Taxeringsutdrag_2024.pdf', section: 'Fastighetsuppgifter', excerpt: 'Registrerad adress: Torslandavägen 12, 418 34 Göteborg.', pageHint: 1 },
+    },
+    {
+      id: 'fastighetsbeteckning', label: 'Fastighetsbeteckning', value: 'Torslanda 3:12', status: 'verified',
+      reference: { filename: 'Taxeringsutdrag_2024.pdf', section: 'Fastighetsbeteckning', excerpt: 'Beteckning: Torslanda 3:12. Registrerat i Lantmäteriets fastighetsregister.', pageHint: 1 },
+    },
+    {
+      id: 'hyresintäkt', label: 'Hyresintäkt (kr/år)', value: '12 600 000', status: 'ai',
+      reference: { filename: 'Hyresavtal_2024.pdf', section: 'Ekonomisk sammanfattning', excerpt: 'Totala hyresintäkter för innevarande år uppgår till 12 600 000 kr.', pageHint: 3 },
+    },
+    {
+      id: 'byggnadsklass', label: 'Byggnadsklass', value: 'Kontorsbyggnad klass B', status: 'verified',
+      reference: { filename: 'Fastighetsdokumentation_2023.pdf', section: 'Avsnitt 1 – Klassificering', excerpt: 'Byggnaden klassificeras som kontorsbyggnad klass B enligt Boverkets indelning.', pageHint: 2 },
+    },
+    {
+      id: 'ägare', label: 'Ägare', value: '', status: 'missing' },
+    {
+      id: 'taxeringsvärde', label: 'Taxeringsvärde (kr)', value: '78 000 000', status: 'ai',
+      reference: { filename: 'Taxeringsutdrag_2024.pdf', section: 'Taxeringsvärde', excerpt: 'Aktuellt taxeringsvärde: 78 000 000 kr (2024 års taxering).', pageHint: 2 },
+    },
+  ];
+  overrides.forEach((o, i) => {
+    if (base[i]) Object.assign(base[i], o);
+  });
+  return base;
+};
+
+const maskinParams = (): ObjectParameter[] => [
+  { id: 'tillverkningsår', label: 'Tillverkningsår', value: '2020', status: 'verified', reference: { filename: 'Maskinspecifikation.pdf', section: 'Tekniska data', excerpt: 'Tillverkningsår: 2020. Leverantör: ABB Industrial.', pageHint: 1 } },
+  { id: 'modell', label: 'Modell', value: 'AX-2000', status: 'verified', reference: { filename: 'Maskinspecifikation.pdf', section: 'Identifikation', excerpt: 'Modellbeteckning AX-2000, serienr 44821-B.', pageHint: 1 } },
+  { id: 'effekt', label: 'Effekt (kW)', value: '250', status: 'ai', reference: { filename: 'Maskinspecifikation.pdf', section: 'Tekniska data', excerpt: 'Nominell motoreffekt: 250 kW vid 1 500 rpm.', pageHint: 2 } },
+  { id: 'placering', label: 'Placering', value: 'Hall 3, rad B', status: 'verified', reference: { filename: 'Planlösning_2023.pdf', section: 'Maskinlayout', excerpt: 'Maskin placerad i hall 3, rad B, position 14.', pageHint: 5 } },
+  { id: 'inköpspris', label: 'Inköpspris (kr)', value: '3 200 000', status: 'ai', reference: { filename: 'Inköpsorder_2020.pdf', section: 'Orderbekräftelse', excerpt: 'Godkänt inköpspris: 3 200 000 kr exkl. moms.', pageHint: 1 } },
+  { id: 'underhållsintervall', label: 'Underhållsintervall', value: '6 månader', status: 'verified', reference: { filename: 'Maskinspecifikation.pdf', section: 'Underhåll', excerpt: 'Rekommenderat underhållsintervall: var 6:e månad.', pageHint: 3 } },
+  { id: 'försäkringsvärde', label: 'Försäkringsvärde (kr)', value: '', status: 'missing' },
+  { id: 'leverantör', label: 'Leverantör', value: 'ABB Industrial', status: 'verified', reference: { filename: 'Maskinspecifikation.pdf', section: 'Identifikation', excerpt: 'Tillverkare och leverantör: ABB Industrial, Sverige.', pageHint: 1 } },
+];
+
 const buildInitialTree = (): OrgTree => ({
   'volvo-ab': {
     id: 'volvo-ab', name: 'Volvo AB', orgnr: '556012-5790',
@@ -32,27 +100,27 @@ const buildInitialTree = (): OrgTree => ({
       {
         id: 'volvo-fastigheter', name: 'Volvo Fastigheter AB', orgnr: '556234-1122',
         insuranceObjects: [
-          { id: 'vf-1', name: 'Kontorshus Torslanda', objectType: 'Fastighet', description: 'Kontorskomplex med 4 våningar, byggd 1998', fieldsTotal: 24, fieldsVerified: 18 },
-          { id: 'vf-2', name: 'Verkstad Skövde', objectType: 'Fastighet', description: 'Industrilokal för fordonsservice och underhåll', fieldsTotal: 20, fieldsVerified: 10 },
-          { id: 'vf-3', name: 'Lagerlokal Göteborg', objectType: 'Fastighet', description: 'Lagerbyggnad 12 000 m², automatiserad', fieldsTotal: 18, fieldsVerified: 17 },
-          { id: 'vf-4', name: 'P-hus Arendal', objectType: 'Fastighet', description: 'Flervåningsparkering med 800 platser', fieldsTotal: 16, fieldsVerified: 7 },
+          { id: 'vf-1', name: 'Kontorshus Torslanda', objectType: 'Fastighet', description: 'Kontorskomplex med 4 våningar, byggd 1998', fieldsTotal: 24, fieldsVerified: 18, parameters: fastighetParams() },
+          { id: 'vf-2', name: 'Verkstad Skövde', objectType: 'Fastighet', description: 'Industrilokal för fordonsservice och underhåll', fieldsTotal: 20, fieldsVerified: 10, parameters: fastighetParams([{},{},{status:'missing',value:''},{},{status:'missing',value:''},{status:'missing',value:''}]) },
+          { id: 'vf-3', name: 'Lagerlokal Göteborg', objectType: 'Fastighet', description: 'Lagerbyggnad 12 000 m², automatiserad', fieldsTotal: 18, fieldsVerified: 17, parameters: fastighetParams([{},{},{status:'verified'},{},{status:'verified'},{},{status:'verified'},{status:'verified'}]) },
+          { id: 'vf-4', name: 'P-hus Arendal', objectType: 'Fastighet', description: 'Flervåningsparkering med 800 platser', fieldsTotal: 16, fieldsVerified: 7, parameters: fastighetParams([{status:'missing',value:''},{status:'ai'},{status:'missing',value:''},{status:'ai'},{status:'missing',value:''},{status:'missing',value:''}]) },
         ],
       },
       {
         id: 'volvo-logistik', name: 'Volvo Logistik AB', orgnr: '556456-3344',
         insuranceObjects: [
-          { id: 'vl-1', name: 'Logistikcenter Göteborg', objectType: 'Fastighet', description: 'Regionalt distributionscenter, 35 000 m²', fieldsTotal: 26, fieldsVerified: 19 },
-          { id: 'vl-2', name: 'Omlastningsstation Borås', objectType: 'Maskin', description: 'Automatiserad omlastningsutrustning, 2020 modell', fieldsTotal: 18, fieldsVerified: 7 },
-          { id: 'vl-3', name: 'Terminalhall Landvetter', objectType: 'Fastighet', description: 'Terminalhall intill Landvetter flygplats', fieldsTotal: 14, fieldsVerified: 13 },
+          { id: 'vl-1', name: 'Logistikcenter Göteborg', objectType: 'Fastighet', description: 'Regionalt distributionscenter, 35 000 m²', fieldsTotal: 26, fieldsVerified: 19, parameters: fastighetParams([{},{value:'35 000'},{value:'Arendalsvägen 4, 418 34 Göteborg',status:'verified'},{value:'Arendal 1:5',status:'verified'},{value:'22 000 000',status:'verified'},{value:'Lager/logistik klass A',status:'verified'},{value:'Volvo Logistik AB',status:'verified'},{value:'145 000 000',status:'ai'}]) },
+          { id: 'vl-2', name: 'Omlastningsstation Borås', objectType: 'Maskin', description: 'Automatiserad omlastningsutrustning, 2020 modell', fieldsTotal: 18, fieldsVerified: 7, parameters: maskinParams() },
+          { id: 'vl-3', name: 'Terminalhall Landvetter', objectType: 'Fastighet', description: 'Terminalhall intill Landvetter flygplats', fieldsTotal: 14, fieldsVerified: 13, parameters: fastighetParams([{value:'2008'},{value:'12 600'},{value:'Flygplatsvägen 1, 438 80 Landvetter',status:'verified'},{value:'Härryda 2:18',status:'verified'},{value:'9 800 000',status:'ai'},{value:'Terminalhall klass A',status:'verified'},{status:'missing',value:''},{value:'96 000 000',status:'verified'}]) },
         ],
       },
       {
         id: 'volvo-produktion', name: 'Volvo Produktion AB', orgnr: '556567-4455',
         insuranceObjects: [
-          { id: 'vp-1', name: 'Monteringsfabrik Olofström', objectType: 'Fastighet', description: 'Pressfabrik för karossdelar, grundad 1946', fieldsTotal: 28, fieldsVerified: 9 },
-          { id: 'vp-2', name: 'Pressverkstad Floby', objectType: 'Maskin', description: 'Tyngre presslinjer för transmission', fieldsTotal: 20, fieldsVerified: 13 },
-          { id: 'vp-3', name: 'Gjuteri Skövde', objectType: 'Maskin', description: 'Motorgjuteri, 300-tonspressen', fieldsTotal: 22, fieldsVerified: 11 },
-          { id: 'vp-4', name: 'Motorverkstad Köping', objectType: 'Fastighet', description: 'Montering och testning av dieselmotorer', fieldsTotal: 16, fieldsVerified: 14 },
+          { id: 'vp-1', name: 'Monteringsfabrik Olofström', objectType: 'Fastighet', description: 'Pressfabrik för karossdelar, grundad 1946', fieldsTotal: 28, fieldsVerified: 9, parameters: fastighetParams([{value:'1946'},{value:'42 000'},{status:'missing',value:''},{status:'ai',value:'Olofström 5:4'},{status:'missing',value:''},{value:'Industrifastighet klass A',status:'verified'},{status:'missing',value:''},{status:'ai',value:'230 000 000'}]) },
+          { id: 'vp-2', name: 'Pressverkstad Floby', objectType: 'Maskin', description: 'Tyngre presslinjer för transmission', fieldsTotal: 20, fieldsVerified: 13, parameters: maskinParams() },
+          { id: 'vp-3', name: 'Gjuteri Skövde', objectType: 'Maskin', description: 'Motorgjuteri, 300-tonspressen', fieldsTotal: 22, fieldsVerified: 11, parameters: maskinParams() },
+          { id: 'vp-4', name: 'Motorverkstad Köping', objectType: 'Fastighet', description: 'Montering och testning av dieselmotorer', fieldsTotal: 16, fieldsVerified: 14, parameters: fastighetParams([{value:'1978'},{value:'18 000'},{value:'Köpingsvägen 44, 731 60 Köping',status:'verified'},{value:'Köping 3:7',status:'verified'},{value:'14 200 000',status:'verified'},{value:'Industrifastighet klass B',status:'verified'},{value:'Volvo Produktion AB',status:'verified'},{status:'missing',value:''}]) },
         ],
       },
     ],
@@ -319,6 +387,39 @@ export function deleteInsuranceObjects(
           s.id === subsidiaryId
             ? { ...s, insuranceObjects: s.insuranceObjects.filter((o) => !idSet.has(o.id)) }
             : s
+        ),
+      },
+    };
+  }
+}
+
+export function updateObjectParameter(
+  rootId: string,
+  subsidiaryId: string | null,
+  objId: string,
+  paramId: string,
+  patch: Partial<Pick<ObjectParameter, 'value' | 'status'>>
+): void {
+  const root = _tree[rootId];
+  if (!root) return;
+  const applyPatch = (objs: InsuranceObject[]) =>
+    objs.map((o) => {
+      if (o.id !== objId) return o;
+      const params = (o.parameters ?? []).map((p) =>
+        p.id === paramId ? { ...p, ...patch } : p
+      );
+      const verifiedCount = params.filter((p) => p.status === 'verified').length;
+      return { ...o, parameters: params, fieldsVerified: verifiedCount, fieldsTotal: params.length };
+    });
+  if (subsidiaryId === null) {
+    _tree = { ..._tree, [rootId]: { ...root, rootInsuranceObjects: applyPatch(root.rootInsuranceObjects) } };
+  } else {
+    _tree = {
+      ..._tree,
+      [rootId]: {
+        ...root,
+        subsidiaries: root.subsidiaries.map((s) =>
+          s.id === subsidiaryId ? { ...s, insuranceObjects: applyPatch(s.insuranceObjects) } : s
         ),
       },
     };

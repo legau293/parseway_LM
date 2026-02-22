@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Pencil, X, Check } from 'lucide-react';
-import { InsuranceObject } from '@/data/mockOrgTree';
+import { InsuranceObject, ParameterStatus } from '@/data/mockOrgTree';
 import ObjectRow, { ObjectListHeader, SortColumn, SortDirection } from './ObjectRow';
+import ObjectThreeColumnView from './ObjectThreeColumnView';
 
 const OBJECT_TYPE_OPTIONS = ['Fastighet', 'Bil', 'Maskin'];
 
@@ -244,6 +245,7 @@ interface ObjectListViewProps {
   onToggleObjectSelect?: (id: string) => void;
   onUpdateObject: (id: string, patch: Partial<Pick<InsuranceObject, 'name' | 'objectType' | 'description'>>) => void;
   onVerifyField: (objId: string) => void;
+  onUpdateParameter?: (objId: string, paramId: string, patch: { value?: string; status?: ParameterStatus }) => void;
   showCheckboxes?: boolean;
   sortColumn?: SortColumn;
   sortDirection?: SortDirection;
@@ -258,6 +260,7 @@ const ObjectListView = ({
   onToggleObjectSelect,
   onUpdateObject,
   onVerifyField,
+  onUpdateParameter,
   showCheckboxes = false,
   sortColumn,
   sortDirection,
@@ -287,11 +290,9 @@ const ObjectListView = ({
               onCheckboxClick={onToggleObjectSelect ? (e) => { e.stopPropagation(); onToggleObjectSelect(obj.id); } : undefined}
             />
             {expandedObjectId === obj.id && (
-              <ObjectDropdown
+              <ObjectThreeColumnView
                 object={obj}
-                onVerifyField={onVerifyField}
-                onUpdate={(patch) => onUpdateObject(obj.id, patch)}
-                onCollapse={() => onToggleObject(obj.id)}
+                onUpdateParameter={(paramId, patch) => onUpdateParameter?.(obj.id, paramId, patch)}
               />
             )}
           </React.Fragment>
