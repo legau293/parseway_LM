@@ -5,6 +5,8 @@ import { InsuranceObject } from '@/data/mockOrgTree';
 export type SortColumn = 'type' | 'name' | 'description' | null;
 export type SortDirection = 'asc' | 'desc';
 
+const CHECKBOX_COL = '24px';
+
 interface ObjectRowProps {
   object: InsuranceObject;
   isExpanded: boolean;
@@ -56,10 +58,10 @@ export const ObjectListHeader = ({ showCheckbox, sortColumn, sortDirection, onSo
 
   return (
     <div
-      className="flex items-center px-4 py-2 gap-2"
-      style={{ borderBottom: '1px solid var(--pw-border)' }}
+      className="flex items-center px-10 py-2"
+      style={{ borderBottom: '1px solid var(--pw-border)', gap: '8px' }}
     >
-      {showCheckbox && <div style={{ width: '20px', flexShrink: 0 }} />}
+      <div style={{ width: CHECKBOX_COL, flexShrink: 0 }} />
       <span
         className="text-xs"
         style={{ ...sortableStyle('type'), width: '140px', flexShrink: 0 }}
@@ -99,8 +101,9 @@ const ObjectRow = ({ object, isExpanded, isChecked = false, showCheckbox = false
 
   return (
     <div
-      className="flex w-full items-center px-4 py-2.5 text-sm transition-colors cursor-pointer gap-2"
+      className="flex w-full items-center px-10 py-2.5 text-sm transition-colors cursor-pointer"
       style={{
+        gap: '8px',
         backgroundColor: isExpanded ? 'var(--pw-bg-tertiary)' : 'transparent',
         borderLeft: isExpanded ? '2px solid var(--pw-accent-red)' : '2px solid transparent',
       }}
@@ -108,15 +111,17 @@ const ObjectRow = ({ object, isExpanded, isChecked = false, showCheckbox = false
       onMouseEnter={(e) => { if (!isExpanded) e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; }}
       onMouseLeave={(e) => { if (!isExpanded) e.currentTarget.style.backgroundColor = 'transparent'; }}
     >
-      {showCheckbox && (
-        <input
-          type="checkbox"
-          checked={isChecked}
-          onChange={() => {}}
-          onClick={onCheckboxClick}
-          style={{ cursor: 'pointer', accentColor: 'var(--pw-accent-red)', flexShrink: 0, width: '14px', height: '14px' }}
-        />
-      )}
+      <div style={{ width: CHECKBOX_COL, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+        {showCheckbox && (
+          <input
+            type="checkbox"
+            checked={isChecked}
+            onChange={() => {}}
+            onClick={onCheckboxClick}
+            style={{ cursor: 'pointer', accentColor: 'var(--pw-accent-red)', width: '14px', height: '14px' }}
+          />
+        )}
+      </div>
 
       <span className="flex items-center gap-1.5" style={{ width: '140px', flexShrink: 0, minWidth: 0 }}>
         {isExpanded ? (

@@ -630,12 +630,12 @@ const Workspace = () => {
           {subOpen && (
             <>
               <div
-                className="px-10 py-1.5 grid"
-                style={{ gridTemplateColumns: 'auto 1fr 140px', gap: '0 8px', borderBottom: '1px solid var(--pw-border)' }}
+                className="flex items-center px-10 py-1.5"
+                style={{ gap: '8px', borderBottom: '1px solid var(--pw-border)' }}
               >
-                <div />
-                <span className="text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>Namn</span>
-                <span className="text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>Färdigställt</span>
+                <div style={{ width: '24px', flexShrink: 0 }} />
+                <span className="text-xs flex-1" style={{ color: 'var(--pw-text-tertiary)' }}>Namn</span>
+                <span className="text-xs" style={{ color: 'var(--pw-text-tertiary)', width: '140px', flexShrink: 0 }}>Färdigställt</span>
               </div>
 
               {filteredSubsidiaries.length === 0 ? (
@@ -650,10 +650,9 @@ const Workspace = () => {
                   return (
                     <div
                       key={sub.id}
-                      className="grid items-center px-10 py-2 transition-colors cursor-pointer"
+                      className="flex items-center px-10 py-2 transition-colors cursor-pointer"
                       style={{
-                        gridTemplateColumns: 'auto 1fr 140px',
-                        gap: '0 8px',
+                        gap: '8px',
                         backgroundColor: isSelected ? 'var(--pw-bg-tertiary)' : 'transparent',
                         borderLeft: isSelected ? '2px solid var(--pw-accent-red)' : '2px solid transparent',
                       }}
@@ -661,14 +660,16 @@ const Workspace = () => {
                       onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; }}
                       onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent'; }}
                     >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => {}}
-                        onClick={(e) => { e.stopPropagation(); handleToggleSubsidiarySelect(sub.id); }}
-                        style={{ cursor: 'pointer', accentColor: 'var(--pw-accent-red)', flexShrink: 0, marginRight: '6px' }}
-                      />
-                      <span className="flex items-center min-w-0">
+                      <div style={{ width: '24px', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {}}
+                          onClick={(e) => { e.stopPropagation(); handleToggleSubsidiarySelect(sub.id); }}
+                          style={{ cursor: 'pointer', accentColor: 'var(--pw-accent-red)', width: '14px', height: '14px' }}
+                        />
+                      </div>
+                      <span className="flex items-center min-w-0 flex-1">
                         <span
                           className="text-sm truncate"
                           style={{ color: isSelected ? 'var(--pw-text-primary)' : 'var(--pw-text-secondary)', fontWeight: isSelected ? 500 : 400 }}
@@ -679,7 +680,9 @@ const Workspace = () => {
                           <OrgNrChip orgnr={sub.orgnr} onCopied={() => showToast('Orgnr kopierat')} />
                         )}
                       </span>
-                      <ProgressPill pct={prog.pct} showPct={false} />
+                      <div style={{ width: '140px', flexShrink: 0 }}>
+                        <ProgressPill pct={prog.pct} showPct={false} />
+                      </div>
                     </div>
                   );
                 })
