@@ -5,7 +5,6 @@ import WorkspaceShell from '@/components/workspace/WorkspaceShell';
 import WorkspaceSidebar from '@/components/workspace/WorkspaceSidebar';
 import ObjectListView from '@/components/workspace/ObjectListView';
 import ProgressPill from '@/components/workspace/ProgressPill';
-import CopyChip from '@/components/workspace/CopyChip';
 import WorkspaceToast from '@/components/workspace/WorkspaceToast';
 import {
   OrgTree,
@@ -23,7 +22,7 @@ import {
   getSubsidiaryProgress,
 } from '@/utils/progress';
 
-type Panel = 'search' | 'add' | null;
+type Panel = 'search' | 'add' | 'delete' | null;
 const OBJECT_TYPE_OPTIONS = ['Fastighet', 'Bil', 'Maskin'];
 
 interface NewObjectForm {
@@ -31,18 +30,6 @@ interface NewObjectForm {
   name: string;
   description: string;
 }
-
-const iStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '4px',
-  borderRadius: '4px',
-  background: 'transparent',
-  border: 'none',
-  cursor: 'pointer',
-  transition: 'color 0.12s, background 0.12s',
-};
 
 const inputBase: React.CSSProperties = {
   backgroundColor: 'var(--pw-bg-primary)',
@@ -54,15 +41,328 @@ const inputBase: React.CSSProperties = {
   outline: 'none',
 };
 
-function useClickOutside(ref: React.RefObject<HTMLElement>, handler: () => void) {
-  useEffect(() => {
-    const listener = (e: MouseEvent) => {
-      if (!ref.current || ref.current.contains(e.target as Node)) return;
-      handler();
-    };
-    document.addEventListener('mousedown', listener);
-    return () => document.removeEventListener('mousedown', listener);
-  }, [ref, handler]);
+const iBtn: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '24px',
+  height: '24px',
+  borderRadius: '4px',
+  background: 'transparent',
+  border: 'none',
+  cursor: 'pointer',
+  flexShrink: 0,
+};
+
+function OrgNrChip({ orgnr, onCopied }: { orgnr: string; onCopied: () => void }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <span
+      onClick={(e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(orgnr).catch(() => {});
+        onCopied();
+      }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        fontSize: '11px',
+        padding: '1px 6px',
+        borderRadius: '4px',
+        border: '1px solid var(--pw-border)',
+        color: 'var(--pw-text-tertiary)',
+        backgroundColor: hover ? 'var(--pw-bg-tertiary)' : 'transparent',
+        cursor: 'pointer',
+        userSelect: 'none',
+        transition: 'background 0.1s',
+        marginLeft: '6px',
+        flexShrink: 0,
+      }}
+      title="Kopiera orgnr"
+    >
+      {orgnr}
+    </span>
+  );
+}
+
+interface InlinePanelProps {
+  panel: Panel;
+  subSearch: string;
+  setSubSearch: (v: string) => void;
+  subAddValue: string;
+  setSubAddValue: (v: string) => void;
+  onAddSubsidiary: () => void;
+  onBulkDelete: () => void;
+  selectedCount: number;
+  onClose: () => void;
+}
+
+function SubInlinePanel({
+  panel,
+  subSearch,
+  setSubSearch,
+  subAddValue,
+  setSubAddValue,
+  onAddSubsidiary,
+  onBulkDelete,
+  selectedCount,
+  onClose,
+}: InlinePanelProps) {
+  if (panel === 'search') {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <input
+          autoFocus
+          value={subSearch}
+          onChange={(e) => setSubSearch(e.target.value)}
+          onKeyDown={(e) => e.key === 'Escape' && onClose()}
+          placeholder="Sök dotterbolag…"
+          style={{ ...inputBase, width: '180px' }}
+        />
+      </div>
+    );
+  }
+  if (panel === 'add') {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <input
+          autoFocus
+          value={subAddValue}
+          onChange={(e) => setSubAddValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') onAddSubsidiary();
+            if (e.key === 'Escape') onClose();
+          }}
+          placeholder="Dotterbolagsnamn…"
+          style={{ ...inputBase, width: '200px' }}
+        />
+        <button
+          onClick={onAddSubsidiary}
+          disabled={!subAddValue.trim()}
+          style={{
+            ...inputBase,
+            padding: '4px 10px',
+            cursor: subAddValue.trim() ? 'pointer' : 'default',
+            opacity: subAddValue.trim() ? 1 : 0.5,
+            flexShrink: 0,
+          }}
+        >
+          Lägg till
+        </button>
+      </div>
+    );
+  }
+  if (panel === 'delete') {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <span style={{ fontSize: '12px', color: 'var(--pw-text-secondary)' }}>
+          {selectedCount} markerade
+        </span>
+        <button
+          onClick={onBulkDelete}
+          disabled={selectedCount === 0}
+          style={{
+            ...inputBase,
+            padding: '3px 10px',
+            color: selectedCount > 0 ? '#E5483F' : 'var(--pw-text-tertiary)',
+            cursor: selectedCount > 0 ? 'pointer' : 'default',
+            opacity: selectedCount > 0 ? 1 : 0.5,
+            borderColor: selectedCount > 0 ? '#E5483F' : 'var(--pw-border)',
+          }}
+        >
+          Ta bort
+        </button>
+      </div>
+    );
+  }
+  return null;
+}
+
+interface ObjInlinePanelProps {
+  panel: Panel;
+  objSearch: string;
+  setObjSearch: (v: string) => void;
+  objTypeFilter: string;
+  setObjTypeFilter: (v: string) => void;
+  objAddForm: NewObjectForm;
+  setObjAddForm: React.Dispatch<React.SetStateAction<NewObjectForm>>;
+  onAddObject: () => void;
+  onClose: () => void;
+}
+
+function ObjInlinePanel({
+  panel,
+  objSearch,
+  setObjSearch,
+  objTypeFilter,
+  setObjTypeFilter,
+  objAddForm,
+  setObjAddForm,
+  onAddObject,
+  onClose,
+}: ObjInlinePanelProps) {
+  if (panel === 'search') {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <input
+          autoFocus
+          value={objSearch}
+          onChange={(e) => setObjSearch(e.target.value)}
+          onKeyDown={(e) => e.key === 'Escape' && onClose()}
+          placeholder="Sök objekt…"
+          style={{ ...inputBase, width: '160px' }}
+        />
+        <select
+          value={objTypeFilter}
+          onChange={(e) => setObjTypeFilter(e.target.value)}
+          style={{ ...inputBase }}
+        >
+          <option value="Alla">Alla typer</option>
+          {OBJECT_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </div>
+    );
+  }
+  if (panel === 'add') {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'nowrap' }}>
+        <select
+          value={objAddForm.objectType}
+          onChange={(e) => setObjAddForm((f) => ({ ...f, objectType: e.target.value }))}
+          style={{ ...inputBase, width: '100px' }}
+        >
+          {OBJECT_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <input
+          autoFocus
+          value={objAddForm.name}
+          onChange={(e) => setObjAddForm((f) => ({ ...f, name: e.target.value }))}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') onAddObject();
+            if (e.key === 'Escape') onClose();
+          }}
+          placeholder="Namn…"
+          style={{ ...inputBase, width: '140px' }}
+        />
+        <input
+          value={objAddForm.description}
+          onChange={(e) => setObjAddForm((f) => ({ ...f, description: e.target.value }))}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') onAddObject();
+            if (e.key === 'Escape') onClose();
+          }}
+          placeholder="Beskrivning…"
+          style={{ ...inputBase, width: '180px' }}
+        />
+        <button
+          onClick={onAddObject}
+          disabled={!objAddForm.name.trim()}
+          style={{
+            ...inputBase,
+            padding: '4px 10px',
+            cursor: objAddForm.name.trim() ? 'pointer' : 'default',
+            opacity: objAddForm.name.trim() ? 1 : 0.5,
+            flexShrink: 0,
+          }}
+        >
+          Lägg till
+        </button>
+      </div>
+    );
+  }
+  return null;
+}
+
+interface SectionHeaderProps {
+  title: string;
+  count: number;
+  panel: Panel;
+  onPanelToggle: (p: Panel) => void;
+  showDelete?: boolean;
+  deleteDisabled?: boolean;
+  panelContent: React.ReactNode;
+  toolbarRef: React.RefObject<HTMLDivElement>;
+}
+
+function SectionHeader({
+  title,
+  count,
+  panel,
+  onPanelToggle,
+  showDelete,
+  deleteDisabled,
+  panelContent,
+  toolbarRef,
+}: SectionHeaderProps) {
+  const hasDeleteSelection = showDelete && !deleteDisabled;
+  const deleteColor = hasDeleteSelection ? '#E5483F' : 'var(--pw-text-tertiary)';
+
+  return (
+    <div
+      ref={toolbarRef}
+      className="flex items-center px-10 py-2 gap-2"
+      style={{ borderBottom: '1px solid var(--pw-border)', minHeight: '40px' }}
+    >
+      <span style={{ fontWeight: 500, color: 'var(--pw-text-primary)', fontSize: '14px', flexShrink: 0 }}>
+        {title}
+      </span>
+      <span className="text-xs" style={{ color: 'var(--pw-text-tertiary)', flexShrink: 0 }}>
+        {count}
+      </span>
+
+      <button
+        onClick={() => onPanelToggle(panel === 'search' ? null : 'search')}
+        title="Sök"
+        style={{
+          ...iBtn,
+          color: panel === 'search' ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; e.currentTarget.style.color = 'var(--pw-text-primary)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = panel === 'search' ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)'; }}
+      >
+        <Search size={13} />
+      </button>
+
+      <button
+        onClick={() => onPanelToggle(panel === 'add' ? null : 'add')}
+        title="Lägg till"
+        style={{
+          ...iBtn,
+          color: panel === 'add' ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; e.currentTarget.style.color = 'var(--pw-text-primary)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = panel === 'add' ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)'; }}
+      >
+        <Plus size={13} />
+      </button>
+
+      {showDelete && (
+        <button
+          onClick={() => !deleteDisabled && onPanelToggle(panel === 'delete' ? null : 'delete')}
+          disabled={deleteDisabled}
+          title="Ta bort markerade"
+          style={{
+            ...iBtn,
+            color: panel === 'delete' ? '#C83B34' : deleteColor,
+            opacity: deleteDisabled ? 0.3 : 1,
+            cursor: deleteDisabled ? 'default' : 'pointer',
+          }}
+          onMouseEnter={(e) => { if (!deleteDisabled) { e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; e.currentTarget.style.color = '#C83B34'; } }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = panel === 'delete' ? '#C83B34' : deleteColor; }}
+        >
+          <Trash2 size={13} />
+        </button>
+      )}
+
+      {panel !== null && panelContent && (
+        <div style={{ display: 'flex', alignItems: 'center', marginLeft: '4px' }}>
+          {panelContent}
+        </div>
+      )}
+    </div>
+  );
 }
 
 const Workspace = () => {
@@ -85,13 +385,13 @@ const Workspace = () => {
   const [objAddForm, setObjAddForm] = useState<NewObjectForm>({ objectType: 'Fastighet', name: '', description: '' });
 
   const [expandedObjectId, setExpandedObjectId] = useState<string | null>(null);
-  const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
 
   const [toastMessage, setToastMessage] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const objListRef = useRef<HTMLDivElement>(null);
+  const subToolbarRef = useRef<HTMLDivElement>(null);
+  const objToolbarRef = useRef<HTMLDivElement>(null);
 
   const showToast = useCallback((msg: string) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -100,9 +400,19 @@ const Workspace = () => {
     toastTimerRef.current = setTimeout(() => setToastVisible(false), 1500);
   }, []);
 
-  useClickOutside(objListRef as React.RefObject<HTMLElement>, () => {
-    setSelectedObjectId(null);
-  });
+  useEffect(() => {
+    const handleMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (subToolbarRef.current && !subToolbarRef.current.contains(target)) {
+        setSubPanel(null);
+      }
+      if (objToolbarRef.current && !objToolbarRef.current.contains(target)) {
+        setObjPanel(null);
+      }
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, []);
 
   const allRootIds = Object.keys(tree);
   const rootCompanyNames: Record<string, string> = {};
@@ -128,7 +438,11 @@ const Workspace = () => {
 
   const filteredObjects = currentObjects.filter((obj) => {
     const matchType = objTypeFilter === 'Alla' || obj.objectType === objTypeFilter;
-    const matchSearch = !objSearch || obj.name.toLowerCase().includes(objSearch.toLowerCase());
+    const q = objSearch.toLowerCase();
+    const matchSearch = !q ||
+      obj.name.toLowerCase().includes(q) ||
+      obj.objectType.toLowerCase().includes(q) ||
+      obj.description.toLowerCase().includes(q);
     return matchType && matchSearch;
   });
 
@@ -142,7 +456,6 @@ const Workspace = () => {
     setSelectedSubsidiaryId(null);
     setSelectedSubsidiaryIds(new Set());
     setExpandedObjectId(null);
-    setSelectedObjectId(null);
     setSubPanel(null);
     setObjPanel(null);
     setSubSearch('');
@@ -153,7 +466,6 @@ const Workspace = () => {
   const handleSelectSubsidiary = (id: string) => {
     setSelectedSubsidiaryId(id);
     setExpandedObjectId(null);
-    setSelectedObjectId(null);
     setObjPanel(null);
     setObjSearch('');
     setObjTypeFilter('Alla');
@@ -162,7 +474,6 @@ const Workspace = () => {
   const handleBackToRoot = () => {
     setSelectedSubsidiaryId(null);
     setExpandedObjectId(null);
-    setSelectedObjectId(null);
   };
 
   const handleLogoClick = () => {
@@ -201,6 +512,7 @@ const Workspace = () => {
 
   const handleBulkDelete = () => {
     if (!selectedRootId || selectedSubsidiaryIds.size === 0) return;
+    setSubPanel(null);
     const count = selectedSubsidiaryIds.size;
     const step1 = window.confirm(
       `Vill du ta bort ${count === 1 ? 'dotterbolaget' : `${count} dotterbolag`}? Alla tillhörande försäkringsobjekt raderas.`
@@ -234,7 +546,6 @@ const Workspace = () => {
 
   const handleToggleObject = (id: string) => {
     setExpandedObjectId((prev) => (prev === id ? null : id));
-    setSelectedObjectId(id);
   };
 
   const handleUpdateObject = (
@@ -251,214 +562,6 @@ const Workspace = () => {
     incrementFieldVerified(selectedRootId, selectedSubsidiaryId, objId);
     setTree(getTree());
   };
-
-  const renderSubPanel = () => {
-    if (subPanel === 'search') {
-      return (
-        <div className="px-10 py-2" style={{ borderTop: '1px solid var(--pw-border)' }}>
-          <input
-            autoFocus
-            value={subSearch}
-            onChange={(e) => setSubSearch(e.target.value)}
-            placeholder="Sök dotterbolag…"
-            style={{ ...inputBase, width: '100%' }}
-          />
-        </div>
-      );
-    }
-    if (subPanel === 'add') {
-      return (
-        <div
-          className="px-10 py-3"
-          style={{ borderTop: '1px solid var(--pw-border)', display: 'flex', gap: '8px', alignItems: 'center' }}
-        >
-          <input
-            autoFocus
-            value={subAddValue}
-            onChange={(e) => setSubAddValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleAddSubsidiary();
-              if (e.key === 'Escape') { setSubPanel(null); setSubAddValue(''); }
-            }}
-            placeholder="Dotterbolagsnamn…"
-            style={{ ...inputBase, flex: 1 }}
-          />
-          <button
-            onClick={handleAddSubsidiary}
-            disabled={!subAddValue.trim()}
-            style={{
-              ...inputBase,
-              cursor: subAddValue.trim() ? 'pointer' : 'default',
-              opacity: subAddValue.trim() ? 1 : 0.5,
-              padding: '4px 12px',
-            }}
-          >
-            Lägg till
-          </button>
-          <button
-            onClick={() => { setSubPanel(null); setSubAddValue(''); }}
-            style={{ fontSize: '12px', color: 'var(--pw-text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            Avbryt
-          </button>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const renderObjPanel = () => {
-    if (objPanel === 'search') {
-      return (
-        <div
-          className="px-10 py-2 flex items-center gap-3"
-          style={{ borderTop: '1px solid var(--pw-border)' }}
-        >
-          <input
-            autoFocus
-            value={objSearch}
-            onChange={(e) => setObjSearch(e.target.value)}
-            placeholder="Sök objekt…"
-            style={{ ...inputBase, flex: 1 }}
-          />
-          <select
-            value={objTypeFilter}
-            onChange={(e) => setObjTypeFilter(e.target.value)}
-            style={{ ...inputBase }}
-          >
-            <option value="Alla">Alla typer</option>
-            {OBJECT_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
-      );
-    }
-    if (objPanel === 'add') {
-      return (
-        <div
-          className="px-10 py-3"
-          style={{ borderTop: '1px solid var(--pw-border)', display: 'flex', gap: '8px', alignItems: 'flex-end', flexWrap: 'wrap' }}
-        >
-          <select
-            value={objAddForm.objectType}
-            onChange={(e) => setObjAddForm((f) => ({ ...f, objectType: e.target.value }))}
-            style={{ ...inputBase, width: '120px' }}
-          >
-            {OBJECT_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-          <input
-            autoFocus
-            value={objAddForm.name}
-            onChange={(e) => setObjAddForm((f) => ({ ...f, name: e.target.value }))}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleAddObject();
-              if (e.key === 'Escape') setObjPanel(null);
-            }}
-            placeholder="Objektnamn…"
-            style={{ ...inputBase, flex: 1, minWidth: '160px' }}
-          />
-          <input
-            value={objAddForm.description}
-            onChange={(e) => setObjAddForm((f) => ({ ...f, description: e.target.value }))}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleAddObject();
-              if (e.key === 'Escape') setObjPanel(null);
-            }}
-            placeholder="Beskrivning…"
-            style={{ ...inputBase, flex: 2, minWidth: '200px' }}
-          />
-          <button
-            onClick={handleAddObject}
-            disabled={!objAddForm.name.trim()}
-            style={{
-              ...inputBase,
-              cursor: objAddForm.name.trim() ? 'pointer' : 'default',
-              opacity: objAddForm.name.trim() ? 1 : 0.5,
-              padding: '4px 12px',
-            }}
-          >
-            Lägg till
-          </button>
-          <button
-            onClick={() => setObjPanel(null)}
-            style={{ fontSize: '12px', color: 'var(--pw-text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            Avbryt
-          </button>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const SectionToolbar = ({
-    title,
-    count,
-    panel,
-    onPanelToggle,
-    showDelete,
-    onDelete,
-  }: {
-    title: string;
-    count: number;
-    panel: Panel;
-    onPanelToggle: (p: Panel) => void;
-    showDelete?: boolean;
-    onDelete?: () => void;
-  }) => (
-    <div
-      className="flex items-center justify-between px-10 py-2"
-      style={{ borderBottom: '1px solid var(--pw-border)' }}
-    >
-      <span style={{ fontWeight: 500, color: 'var(--pw-text-primary)', fontSize: '14px' }}>
-        {title}{' '}
-        <span className="text-xs ml-1" style={{ color: 'var(--pw-text-tertiary)', fontWeight: 400 }}>{count}</span>
-      </span>
-      <div className="flex items-center gap-1">
-        <button
-          onClick={() => onPanelToggle(panel === 'search' ? null : 'search')}
-          style={{ ...iStyle, color: panel === 'search' ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)' }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; e.currentTarget.style.color = 'var(--pw-text-primary)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = panel === 'search' ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)'; }}
-          title="Sök"
-        >
-          <Search size={14} />
-        </button>
-        <button
-          onClick={() => onPanelToggle(panel === 'add' ? null : 'add')}
-          style={{ ...iStyle, color: panel === 'add' ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)' }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; e.currentTarget.style.color = 'var(--pw-text-primary)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = panel === 'add' ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)'; }}
-          title="Lägg till"
-        >
-          <Plus size={14} />
-        </button>
-        {showDelete && (
-          <button
-            onClick={onDelete}
-            disabled={selectedSubsidiaryIds.size === 0}
-            style={{
-              ...iStyle,
-              color: selectedSubsidiaryIds.size > 0 ? '#E5483F' : 'var(--pw-text-tertiary)',
-              opacity: selectedSubsidiaryIds.size > 0 ? 1 : 0.3,
-            }}
-            onMouseEnter={(e) => {
-              if (selectedSubsidiaryIds.size > 0) {
-                e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)';
-                e.currentTarget.style.color = '#C83B34';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = selectedSubsidiaryIds.size > 0 ? '#E5483F' : 'var(--pw-text-tertiary)';
-            }}
-            title="Radera markerade"
-          >
-            <Trash2 size={14} />
-          </button>
-        )}
-      </div>
-    </div>
-  );
 
   const renderBreadcrumb = () => {
     if (!rootCompany) return null;
@@ -508,35 +611,45 @@ const Workspace = () => {
           <div className="flex items-center justify-between mb-1">
             <h1 style={{ color: 'var(--pw-text-primary)', fontSize: '26px', fontWeight: 500, lineHeight: 1.2 }}>
               {rootCompany.name}
+              {rootCompany.orgnr && (
+                <OrgNrChip orgnr={rootCompany.orgnr} onCopied={() => showToast('Orgnr kopierat')} />
+              )}
             </h1>
             {rootProgress && <ProgressPill pct={rootProgress.pct} showPct={true} barWidth={100} />}
           </div>
-          {rootCompany.orgnr && (
-            <div className="mb-2">
-              <CopyChip text={rootCompany.orgnr} label="Orgnr" onCopied={() => showToast('Orgnr kopierat')} />
-            </div>
-          )}
           {renderBreadcrumb()}
         </div>
 
         <div style={{ borderBottom: '1px solid var(--pw-border)' }}>
-          <SectionToolbar
+          <SectionHeader
             title="Dotterbolag"
             count={subCount}
             panel={subPanel}
             onPanelToggle={setSubPanel}
             showDelete={true}
-            onDelete={handleBulkDelete}
+            deleteDisabled={selectedSubsidiaryIds.size === 0}
+            toolbarRef={subToolbarRef}
+            panelContent={
+              <SubInlinePanel
+                panel={subPanel}
+                subSearch={subSearch}
+                setSubSearch={setSubSearch}
+                subAddValue={subAddValue}
+                setSubAddValue={setSubAddValue}
+                onAddSubsidiary={handleAddSubsidiary}
+                onBulkDelete={handleBulkDelete}
+                selectedCount={selectedSubsidiaryIds.size}
+                onClose={() => setSubPanel(null)}
+              />
+            }
           />
-          {renderSubPanel()}
 
           <div
             className="px-10 py-1.5 grid"
-            style={{ gridTemplateColumns: 'auto 1fr auto 140px', gap: '0 8px', borderBottom: '1px solid var(--pw-border)' }}
+            style={{ gridTemplateColumns: 'auto 1fr 140px', gap: '0 8px', borderBottom: '1px solid var(--pw-border)' }}
           >
             <div />
             <span className="text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>Namn</span>
-            <div />
             <span className="text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>Färdigställt</span>
           </div>
 
@@ -554,40 +667,36 @@ const Workspace = () => {
                   key={sub.id}
                   className="grid items-center px-10 py-2 transition-colors cursor-pointer"
                   style={{
-                    gridTemplateColumns: 'auto 1fr auto 140px',
+                    gridTemplateColumns: 'auto 1fr 140px',
                     gap: '0 8px',
                     backgroundColor: isSelected ? 'var(--pw-bg-tertiary)' : 'transparent',
                     borderLeft: isSelected ? '2px solid var(--pw-accent-red)' : '2px solid transparent',
                   }}
                   onClick={() => handleSelectSubsidiary(sub.id)}
-                  onMouseEnter={(e) => {
-                    if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
+                  onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; }}
+                  onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent'; }}
                 >
                   <input
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => {}}
                     onClick={(e) => { e.stopPropagation(); handleToggleSubsidiarySelect(sub.id); }}
-                    style={{ cursor: 'pointer', accentColor: 'var(--pw-accent-red)', flexShrink: 0, marginRight: '4px' }}
+                    style={{ cursor: 'pointer', accentColor: 'var(--pw-accent-red)', flexShrink: 0, marginRight: '6px' }}
                   />
-                  <span
-                    className="text-sm truncate"
-                    style={{
-                      color: isSelected ? 'var(--pw-text-primary)' : 'var(--pw-text-secondary)',
-                      fontWeight: isSelected ? 500 : 400,
-                    }}
-                  >
-                    {sub.name}
+                  <span className="flex items-center min-w-0">
+                    <span
+                      className="text-sm truncate"
+                      style={{
+                        color: isSelected ? 'var(--pw-text-primary)' : 'var(--pw-text-secondary)',
+                        fontWeight: isSelected ? 500 : 400,
+                      }}
+                    >
+                      {sub.name}
+                    </span>
+                    {sub.orgnr && (
+                      <OrgNrChip orgnr={sub.orgnr} onCopied={() => showToast('Orgnr kopierat')} />
+                    )}
                   </span>
-                  {sub.orgnr ? (
-                    <CopyChip text={sub.orgnr} label="Orgnr" onCopied={() => showToast('Orgnr kopierat')} />
-                  ) : (
-                    <div />
-                  )}
                   <ProgressPill pct={prog.pct} showPct={false} />
                 </div>
               );
@@ -596,23 +705,33 @@ const Workspace = () => {
         </div>
 
         <div>
-          <SectionToolbar
+          <SectionHeader
             title="Försäkringsobjekt"
             count={objCount}
             panel={objPanel}
             onPanelToggle={setObjPanel}
+            toolbarRef={objToolbarRef}
+            panelContent={
+              <ObjInlinePanel
+                panel={objPanel}
+                objSearch={objSearch}
+                setObjSearch={setObjSearch}
+                objTypeFilter={objTypeFilter}
+                setObjTypeFilter={setObjTypeFilter}
+                objAddForm={objAddForm}
+                setObjAddForm={setObjAddForm}
+                onAddObject={handleAddObject}
+                onClose={() => setObjPanel(null)}
+              />
+            }
           />
-          {renderObjPanel()}
-          <div ref={objListRef}>
-            <ObjectListView
-              objects={filteredObjects}
-              expandedObjectId={expandedObjectId}
-              selectedObjectId={selectedObjectId}
-              onToggleObject={handleToggleObject}
-              onUpdateObject={handleUpdateObject}
-              onVerifyField={handleVerifyField}
-            />
-          </div>
+          <ObjectListView
+            objects={filteredObjects}
+            expandedObjectId={expandedObjectId}
+            onToggleObject={handleToggleObject}
+            onUpdateObject={handleUpdateObject}
+            onVerifyField={handleVerifyField}
+          />
         </div>
       </div>
     );
@@ -628,41 +747,45 @@ const Workspace = () => {
           <div className="flex items-center justify-between mb-1">
             <h1 style={{ color: 'var(--pw-text-primary)', fontSize: '26px', fontWeight: 500, lineHeight: 1.2 }}>
               {selectedSubsidiary.name}
+              {selectedSubsidiary.orgnr && (
+                <OrgNrChip orgnr={selectedSubsidiary.orgnr} onCopied={() => showToast('Orgnr kopierat')} />
+              )}
             </h1>
             {subsidiaryProgress && (
               <ProgressPill pct={subsidiaryProgress.pct} showPct={true} barWidth={100} />
             )}
           </div>
-          {selectedSubsidiary.orgnr && (
-            <div className="mb-2">
-              <CopyChip
-                text={selectedSubsidiary.orgnr}
-                label="Orgnr"
-                onCopied={() => showToast('Orgnr kopierat')}
-              />
-            </div>
-          )}
           {renderBreadcrumb()}
         </div>
 
         <div>
-          <SectionToolbar
+          <SectionHeader
             title="Försäkringsobjekt"
             count={objCount}
             panel={objPanel}
             onPanelToggle={setObjPanel}
+            toolbarRef={objToolbarRef}
+            panelContent={
+              <ObjInlinePanel
+                panel={objPanel}
+                objSearch={objSearch}
+                setObjSearch={setObjSearch}
+                objTypeFilter={objTypeFilter}
+                setObjTypeFilter={setObjTypeFilter}
+                objAddForm={objAddForm}
+                setObjAddForm={setObjAddForm}
+                onAddObject={handleAddObject}
+                onClose={() => setObjPanel(null)}
+              />
+            }
           />
-          {renderObjPanel()}
-          <div ref={objListRef}>
-            <ObjectListView
-              objects={filteredObjects}
-              expandedObjectId={expandedObjectId}
-              selectedObjectId={selectedObjectId}
-              onToggleObject={handleToggleObject}
-              onUpdateObject={handleUpdateObject}
-              onVerifyField={handleVerifyField}
-            />
-          </div>
+          <ObjectListView
+            objects={filteredObjects}
+            expandedObjectId={expandedObjectId}
+            onToggleObject={handleToggleObject}
+            onUpdateObject={handleUpdateObject}
+            onVerifyField={handleVerifyField}
+          />
         </div>
       </div>
     );
