@@ -1,6 +1,9 @@
 import React from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, ChevronUp } from 'lucide-react';
 import { InsuranceObject } from '@/data/mockOrgTree';
+
+export type SortColumn = 'type' | 'name' | 'description' | null;
+export type SortDirection = 'asc' | 'desc';
 
 interface ObjectRowProps {
   object: InsuranceObject;
@@ -29,20 +32,65 @@ const ProgressBar = ({ pct }: { pct: number }) => (
 
 interface ObjectListHeaderProps {
   showCheckbox?: boolean;
+  sortColumn?: SortColumn;
+  sortDirection?: SortDirection;
+  onSort?: (col: SortColumn) => void;
 }
 
-export const ObjectListHeader = ({ showCheckbox }: ObjectListHeaderProps) => (
-  <div
-    className="flex items-center px-4 py-2 gap-2"
-    style={{ borderBottom: '1px solid var(--pw-border)' }}
-  >
-    {showCheckbox && <div style={{ width: '20px', flexShrink: 0 }} />}
-    <span className="text-xs" style={{ color: 'var(--pw-text-secondary)', width: '140px', flexShrink: 0 }}>Typ</span>
-    <span className="text-xs" style={{ color: 'var(--pw-text-secondary)', width: '220px', flexShrink: 0 }}>Namn</span>
-    <span className="text-xs flex-1" style={{ color: 'var(--pw-text-secondary)' }}>Beskrivning</span>
-    <span className="text-xs" style={{ color: 'var(--pw-text-secondary)', width: '160px', flexShrink: 0 }}>Färdigställt</span>
-  </div>
-);
+export const ObjectListHeader = ({ showCheckbox, sortColumn, sortDirection, onSort }: ObjectListHeaderProps) => {
+  const SortIcon = ({ col }: { col: SortColumn }) => {
+    if (sortColumn !== col) return null;
+    return sortDirection === 'asc'
+      ? <ChevronUp size={10} style={{ flexShrink: 0 }} />
+      : <ChevronDown size={10} style={{ flexShrink: 0 }} />;
+  };
+
+  const sortableStyle = (col: SortColumn): React.CSSProperties => ({
+    color: sortColumn === col ? 'var(--pw-text-primary)' : 'var(--pw-text-secondary)',
+    cursor: onSort ? 'pointer' : 'default',
+    userSelect: 'none',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '2px',
+  });
+
+  return (
+    <div
+      className="flex items-center px-4 py-2 gap-2"
+      style={{ borderBottom: '1px solid var(--pw-border)' }}
+    >
+      {showCheckbox && <div style={{ width: '20px', flexShrink: 0 }} />}
+      <span
+        className="text-xs"
+        style={{ ...sortableStyle('type'), width: '140px', flexShrink: 0 }}
+        onClick={() => onSort?.('type')}
+        onMouseEnter={(e) => { if (onSort) (e.currentTarget as HTMLElement).style.color = 'var(--pw-text-primary)'; }}
+        onMouseLeave={(e) => { if (onSort) (e.currentTarget as HTMLElement).style.color = sortColumn === 'type' ? 'var(--pw-text-primary)' : 'var(--pw-text-secondary)'; }}
+      >
+        Typ<SortIcon col="type" />
+      </span>
+      <span
+        className="text-xs"
+        style={{ ...sortableStyle('name'), width: '220px', flexShrink: 0 }}
+        onClick={() => onSort?.('name')}
+        onMouseEnter={(e) => { if (onSort) (e.currentTarget as HTMLElement).style.color = 'var(--pw-text-primary)'; }}
+        onMouseLeave={(e) => { if (onSort) (e.currentTarget as HTMLElement).style.color = sortColumn === 'name' ? 'var(--pw-text-primary)' : 'var(--pw-text-secondary)'; }}
+      >
+        Namn<SortIcon col="name" />
+      </span>
+      <span
+        className="text-xs flex-1"
+        style={{ ...sortableStyle('description') }}
+        onClick={() => onSort?.('description')}
+        onMouseEnter={(e) => { if (onSort) (e.currentTarget as HTMLElement).style.color = 'var(--pw-text-primary)'; }}
+        onMouseLeave={(e) => { if (onSort) (e.currentTarget as HTMLElement).style.color = sortColumn === 'description' ? 'var(--pw-text-primary)' : 'var(--pw-text-secondary)'; }}
+      >
+        Beskrivning<SortIcon col="description" />
+      </span>
+      <span className="text-xs" style={{ color: 'var(--pw-text-secondary)', width: '160px', flexShrink: 0 }}>Färdigställt</span>
+    </div>
+  );
+};
 
 const ObjectRow = ({ object, isExpanded, isChecked = false, showCheckbox = false, onClick, onCheckboxClick }: ObjectRowProps) => {
   const pct = object.fieldsTotal === 0

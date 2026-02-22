@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Pencil, X, Check } from 'lucide-react';
 import { InsuranceObject } from '@/data/mockOrgTree';
-import ObjectRow, { ObjectListHeader } from './ObjectRow';
+import ObjectRow, { ObjectListHeader, SortColumn, SortDirection } from './ObjectRow';
 
 const OBJECT_TYPE_OPTIONS = ['Fastighet', 'Bil', 'Maskin'];
 
@@ -245,6 +245,9 @@ interface ObjectListViewProps {
   onUpdateObject: (id: string, patch: Partial<Pick<InsuranceObject, 'name' | 'objectType' | 'description'>>) => void;
   onVerifyField: (objId: string) => void;
   showCheckboxes?: boolean;
+  sortColumn?: SortColumn;
+  sortDirection?: SortDirection;
+  onSort?: (col: SortColumn) => void;
 }
 
 const ObjectListView = ({
@@ -256,6 +259,9 @@ const ObjectListView = ({
   onUpdateObject,
   onVerifyField,
   showCheckboxes = false,
+  sortColumn,
+  sortDirection,
+  onSort,
 }: ObjectListViewProps) => {
   if (objects.length === 0) {
     return (
@@ -267,7 +273,7 @@ const ObjectListView = ({
 
   return (
     <div>
-      <ObjectListHeader showCheckbox={showCheckboxes} />
+      <ObjectListHeader showCheckbox={showCheckboxes} sortColumn={sortColumn} sortDirection={sortDirection} onSort={onSort} />
       {objects.map((obj) => {
         const isChecked = selectedObjectIds?.has(obj.id) ?? false;
         return (

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Search, Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, Plus, Trash2, ChevronDown, ChevronRight, Filter } from 'lucide-react';
+import { SortColumn, SortDirection } from '@/components/workspace/ObjectRow';
 import { useLogout } from '@/services/authService';
 import WorkspaceShell from '@/components/workspace/WorkspaceShell';
 import WorkspaceSidebar from '@/components/workspace/WorkspaceSidebar';
@@ -23,7 +24,7 @@ import {
   getSubsidiaryProgress,
 } from '@/utils/progress';
 
-type Panel = 'search' | 'add' | 'delete' | null;
+type Panel = 'search' | 'add' | 'delete' | 'filter' | null;
 const OBJECT_TYPE_OPTIONS = ['Fastighet', 'Bil', 'Maskin'];
 
 interface NewObjectForm {
@@ -164,10 +165,29 @@ function ObjInlinePanel({
         <input autoFocus value={objSearch} onChange={(e) => setObjSearch(e.target.value)}
           onKeyDown={(e) => e.key === 'Escape' && onClose()}
           placeholder="Sök objekt…" style={{ ...inputBase, width: '160px' }} />
-        <select value={objTypeFilter} onChange={(e) => setObjTypeFilter(e.target.value)} style={{ ...inputBase }}>
-          <option value="Alla">Alla typer</option>
-          {OBJECT_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
+      </div>
+    );
+  }
+  if (panel === 'filter') {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <span style={{ fontSize: '12px', color: 'var(--pw-text-tertiary)' }}>Typ:</span>
+        {['Alla', ...OBJECT_TYPE_OPTIONS].map((t) => (
+          <button
+            key={t}
+            onClick={() => setObjTypeFilter(t)}
+            style={{
+              ...inputBase,
+              padding: '2px 8px',
+              cursor: 'pointer',
+              backgroundColor: objTypeFilter === t ? 'var(--pw-bg-tertiary)' : 'transparent',
+              color: objTypeFilter === t ? 'var(--pw-text-primary)' : 'var(--pw-text-secondary)',
+              borderColor: objTypeFilter === t ? 'var(--pw-text-secondary)' : 'var(--pw-border)',
+            }}
+          >
+            {t === 'Alla' ? 'Alla' : t}
+          </button>
+        ))}
       </div>
     );
   }
@@ -213,13 +233,15 @@ interface SectionHeaderProps {
   onPanelToggle: (p: Panel) => void;
   showDelete?: boolean;
   deleteDisabled?: boolean;
+  showFilter?: boolean;
+  filterActive?: boolean;
   panelContent: React.ReactNode;
   toolbarRef: React.RefObject<HTMLDivElement>;
 }
 
 function SectionHeader({
   title, count, isOpen, onToggleOpen, panel, onPanelToggle,
-  showDelete, deleteDisabled, panelContent, toolbarRef,
+  showDelete, deleteDisabled, showFilter, filterActive, panelContent, toolbarRef,
 }: SectionHeaderProps) {
   const hasDeleteSelection = showDelete && !deleteDisabled;
   const deleteColor = hasDeleteSelection ? '#E5483F' : 'var(--pw-text-tertiary)';
@@ -281,6 +303,18 @@ function SectionHeader({
         </button>
       )}
 
+      {showFilter && (
+        <button
+          onClick={() => onPanelToggle(panel === 'filter' ? null : 'filter')}
+          title="Filtrera"
+          style={{ ...iBtn, color: panel === 'filter' || filterActive ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)' }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; e.currentTarget.style.color = 'var(--pw-text-primary)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = panel === 'filter' || filterActive ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)'; }}
+        >
+          <Filter size={13} />
+        </button>
+      )}
+
       {panel !== null && panelContent && (
         <div style={{ display: 'flex', alignItems: 'center', marginLeft: '4px' }}>
           {panelContent}
@@ -312,6 +346,8 @@ const Workspace = () => {
   const [objSearch, setObjSearch] = useState('');
   const [objTypeFilter, setObjTypeFilter] = useState('Alla');
   const [objAddForm, setObjAddForm] = useState<NewObjectForm>({ objectType: 'Fastighet', name: '', description: '' });
+  const [objSortColumn, setObjSortColumn] = useState<SortColumn>(null);
+  const [objSortDirection, setObjSortDirection] = useState<SortDirection>('asc');
 
   const [expandedObjectId, setExpandedObjectId] = useState<string | null>(null);
 
@@ -361,12 +397,24 @@ const Workspace = () => {
       : (selectedSubsidiary?.insuranceObjects ?? [])
     : [];
 
-  const filteredObjects = currentObjects.filter((obj) => {
-    const matchType = objTypeFilter === 'Alla' || obj.objectType === objTypeFilter;
-    const q = objSearch.toLowerCase();
-    const matchSearch = !q || obj.name.toLowerCase().includes(q) || obj.objectType.toLowerCase().includes(q) || obj.description.toLowerCase().includes(q);
-    return matchType && matchSearch;
-  });
+  const filteredObjects = (() => {
+    const filtered = currentObjects.filter((obj) => {
+      const matchType = objTypeFilter === 'Alla' || obj.objectType === objTypeFilter;
+      const q = objSearch.toLowerCase();
+      const matchSearch = !q || obj.name.toLowerCase().includes(q) || obj.objectType.toLowerCase().includes(q) || obj.description.toLowerCase().includes(q);
+      return matchType && matchSearch;
+    });
+    if (!objSortColumn) return filtered;
+    return [...filtered].sort((a, b) => {
+      let valA = '';
+      let valB = '';
+      if (objSortColumn === 'type') { valA = a.objectType; valB = b.objectType; }
+      else if (objSortColumn === 'name') { valA = a.name; valB = b.name; }
+      else if (objSortColumn === 'description') { valA = a.description; valB = b.description; }
+      const cmp = valA.localeCompare(valB, 'sv');
+      return objSortDirection === 'asc' ? cmp : -cmp;
+    });
+  })();
 
   const filteredSubsidiaries =
     rootCompany?.subsidiaries.filter((s) => !subSearch || s.name.toLowerCase().includes(subSearch.toLowerCase())) ?? [];
@@ -382,6 +430,8 @@ const Workspace = () => {
     setSubSearch('');
     setObjSearch('');
     setObjTypeFilter('Alla');
+    setObjSortColumn(null);
+    setObjSortDirection('asc');
     setSubOpen(true);
     setObjOpen(true);
   };
@@ -393,6 +443,17 @@ const Workspace = () => {
     setObjPanel(null);
     setObjSearch('');
     setObjTypeFilter('Alla');
+    setObjSortColumn(null);
+    setObjSortDirection('asc');
+  };
+
+  const handleObjSort = (col: SortColumn) => {
+    if (objSortColumn === col) {
+      setObjSortDirection((d) => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setObjSortColumn(col);
+      setObjSortDirection('asc');
+    }
   };
 
   const handleBackToRoot = () => {
@@ -637,6 +698,8 @@ const Workspace = () => {
             onPanelToggle={setObjPanel}
             showDelete={true}
             deleteDisabled={selectedObjectIds.size === 0}
+            showFilter={true}
+            filterActive={objTypeFilter !== 'Alla'}
             toolbarRef={objToolbarRef}
             panelContent={
               <ObjInlinePanel
@@ -661,6 +724,9 @@ const Workspace = () => {
               onUpdateObject={handleUpdateObject}
               onVerifyField={handleVerifyField}
               showCheckboxes={true}
+              sortColumn={objSortColumn}
+              sortDirection={objSortDirection}
+              onSort={handleObjSort}
             />
           )}
         </div>
@@ -706,22 +772,46 @@ const Workspace = () => {
         </div>
 
         <div>
-          <div
-            className="flex items-center px-10 py-2"
-            style={{ borderBottom: '1px solid var(--pw-border)', minHeight: '40px' }}
-          >
-            <span style={{ fontWeight: 500, color: 'var(--pw-text-primary)', fontSize: '14px', flexShrink: 0 }}>
-              Försäkringsobjekt
-            </span>
-            <span className="text-xs ml-2" style={{ color: 'var(--pw-text-tertiary)' }}>{objCount}</span>
-          </div>
-          <ObjectListView
-            objects={filteredObjects}
-            expandedObjectId={expandedObjectId}
-            onToggleObject={handleToggleObject}
-            onUpdateObject={handleUpdateObject}
-            onVerifyField={handleVerifyField}
+          <SectionHeader
+            title="Försäkringsobjekt"
+            count={objCount}
+            isOpen={objOpen}
+            onToggleOpen={() => setObjOpen((v) => !v)}
+            panel={objPanel}
+            onPanelToggle={setObjPanel}
+            showDelete={true}
+            deleteDisabled={selectedObjectIds.size === 0}
+            showFilter={true}
+            filterActive={objTypeFilter !== 'Alla'}
+            toolbarRef={objToolbarRef}
+            panelContent={
+              <ObjInlinePanel
+                panel={objPanel}
+                objSearch={objSearch} setObjSearch={setObjSearch}
+                objTypeFilter={objTypeFilter} setObjTypeFilter={setObjTypeFilter}
+                objAddForm={objAddForm} setObjAddForm={setObjAddForm}
+                onAddObject={handleAddObject}
+                onBulkDeleteObjects={handleBulkDeleteObjects}
+                selectedCount={selectedObjectIds.size}
+                onClose={() => setObjPanel(null)}
+              />
+            }
           />
+          {objOpen && (
+            <ObjectListView
+              objects={filteredObjects}
+              expandedObjectId={expandedObjectId}
+              selectedObjectIds={selectedObjectIds}
+              onToggleObject={handleToggleObject}
+              onToggleObjectSelect={handleToggleObjectSelect}
+              onUpdateObject={handleUpdateObject}
+              onVerifyField={handleVerifyField}
+              showCheckboxes={true}
+              sortColumn={objSortColumn}
+              sortDirection={objSortDirection}
+              onSort={handleObjSort}
+            />
+          )}
         </div>
       </div>
     );
