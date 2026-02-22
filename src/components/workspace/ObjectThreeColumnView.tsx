@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Check, FileText, ChevronRight } from 'lucide-react';
 import { InsuranceObject, ObjectParameter, ParameterStatus } from '@/data/mockOrgTree';
+import { getProgressFill } from './ProgressPill';
 
 interface Props {
   object: InsuranceObject;
@@ -220,6 +221,7 @@ function LeftColumn({
             height: '3px',
             borderRadius: '2px',
             backgroundColor: 'var(--pw-bg-tertiary)',
+            border: '1px solid var(--pw-border)',
             overflow: 'hidden',
           }}
         >
@@ -228,8 +230,7 @@ function LeftColumn({
               height: '100%',
               width: `${pct}%`,
               borderRadius: '2px',
-              backgroundColor: allDone ? TEAL : undefined,
-              background: allDone ? TEAL : `linear-gradient(90deg, ${RED} 0%, ${TEAL} 100%)`,
+              background: getProgressFill(pct),
               transition: 'width 0.35s ease',
             }}
           />

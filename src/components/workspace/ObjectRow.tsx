@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronDown, ChevronRight, ChevronUp } from 'lucide-react';
 import { InsuranceObject } from '@/data/mockOrgTree';
+import { getProgressFill } from './ProgressPill';
 
 export type SortColumn = 'type' | 'name' | 'description' | null;
 export type SortDirection = 'asc' | 'desc';
@@ -19,13 +20,17 @@ interface ObjectRowProps {
 const ProgressBar = ({ pct }: { pct: number }) => (
   <div
     className="rounded-full overflow-hidden"
-    style={{ height: '6px', backgroundColor: 'var(--pw-bg-tertiary)' }}
+    style={{
+      height: '6px',
+      backgroundColor: 'var(--pw-bg-tertiary)',
+      border: '1px solid var(--pw-border)',
+    }}
   >
     <div
       className="h-full rounded-full"
       style={{
         width: `${pct}%`,
-        background: pct === 100 ? '#2DB7A3' : 'linear-gradient(90deg, #E5483F 0%, #2DB7A3 100%)',
+        background: getProgressFill(pct),
         transition: 'width 0.3s ease',
       }}
     />
