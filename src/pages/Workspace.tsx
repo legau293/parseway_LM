@@ -512,34 +512,6 @@ const Workspace = () => {
     setTree(getTree());
   };
 
-  const renderBreadcrumb = () => {
-    if (!rootCompany) return null;
-    return (
-      <div className="flex items-center gap-1.5 flex-wrap mb-6">
-        {selectedSubsidiary ? (
-          <>
-            <button
-              onClick={handleBackToRoot}
-              className="text-sm transition-colors"
-              style={{ color: 'var(--pw-text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--pw-text-primary)')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--pw-text-secondary)')}
-            >
-              {rootCompany.name}
-            </button>
-            <span className="text-sm" style={{ color: 'var(--pw-text-tertiary)' }}>/</span>
-            <span className="text-sm" style={{ color: 'var(--pw-text-primary)', fontWeight: 500 }}>
-              {selectedSubsidiary.name}
-            </span>
-          </>
-        ) : (
-          <span className="text-sm" style={{ color: 'var(--pw-text-primary)', fontWeight: 500 }}>
-            {rootCompany.name}
-          </span>
-        )}
-      </div>
-    );
-  };
 
   const renderHome = () => (
     <div className="flex items-center justify-center h-full" style={{ minHeight: '200px' }}>
@@ -557,7 +529,7 @@ const Workspace = () => {
     return (
       <div>
         <div className="px-10 pt-8 pb-4" style={{ borderBottom: '1px solid var(--pw-border)' }}>
-          <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center justify-between">
             <h1 style={{ color: 'var(--pw-text-primary)', fontSize: '26px', fontWeight: 500, lineHeight: 1.2 }}>
               {rootCompany.name}
               {rootCompany.orgnr && (
@@ -566,7 +538,6 @@ const Workspace = () => {
             </h1>
             {rootProgress && <ProgressPill pct={rootProgress.pct} showPct={true} barWidth={100} />}
           </div>
-          {renderBreadcrumb()}
         </div>
 
         <div style={{ borderBottom: '1px solid var(--pw-border)' }}>
@@ -702,18 +673,34 @@ const Workspace = () => {
     return (
       <div>
         <div className="px-10 pt-8 pb-4" style={{ borderBottom: '1px solid var(--pw-border)' }}>
-          <div className="flex items-center justify-between mb-1">
-            <h1 style={{ color: 'var(--pw-text-primary)', fontSize: '26px', fontWeight: 500, lineHeight: 1.2 }}>
-              {selectedSubsidiary.name}
-              {selectedSubsidiary.orgnr && (
-                <OrgNrChip orgnr={selectedSubsidiary.orgnr} onCopied={() => showToast('Orgnr kopierat')} />
-              )}
-            </h1>
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center">
+                <span
+                  onClick={handleBackToRoot}
+                  style={{ color: 'var(--pw-text-secondary)', fontSize: '26px', fontWeight: 500, lineHeight: 1.2, cursor: 'pointer', transition: 'color 0.15s' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--pw-text-primary)'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--pw-text-secondary)'; }}
+                >
+                  {rootCompany.name}
+                </span>
+                {rootCompany.orgnr && (
+                  <OrgNrChip orgnr={rootCompany.orgnr} onCopied={() => showToast('Orgnr kopierat')} />
+                )}
+              </div>
+              <div className="flex items-center mt-1">
+                <h1 style={{ color: 'var(--pw-text-primary)', fontSize: '22px', fontWeight: 500, lineHeight: 1.2 }}>
+                  {selectedSubsidiary.name}
+                </h1>
+                {selectedSubsidiary.orgnr && (
+                  <OrgNrChip orgnr={selectedSubsidiary.orgnr} onCopied={() => showToast('Orgnr kopierat')} />
+                )}
+              </div>
+            </div>
             {subsidiaryProgress && (
               <ProgressPill pct={subsidiaryProgress.pct} showPct={true} barWidth={100} />
             )}
           </div>
-          {renderBreadcrumb()}
         </div>
 
         <div>
