@@ -3,20 +3,22 @@ import { useLogout } from '@/services/authService';
 import WorkspaceShell from '@/components/workspace/WorkspaceShell';
 import WorkspaceSidebar from '@/components/workspace/WorkspaceSidebar';
 import WorkspaceHeader from '@/components/workspace/WorkspaceHeader';
-import SubsidiaryList from '@/components/workspace/SubsidiaryList';
-import CollapsibleSection from '@/components/workspace/CollapsibleSection';
 import ObjectListView from '@/components/workspace/ObjectListView';
+import ProgressPill from '@/components/workspace/ProgressPill';
 import {
-  getRootCompanies,
-  getCompanyNodeById,
-  getChildCompanies,
-  getInsuranceObjects,
+  OrgTree,
+  ROOT_COMPANY_IDS,
+  getTree,
   getPathToNode,
   addChildNode,
   addInsuranceObject,
+  incrementFieldVerified,
 } from '@/data/mockOrgTree';
+import { getNodeProgress } from '@/utils/progress';
 
 const Workspace = () => {
+  const [tree, setTree] = useState<OrgTree>(() => ({ ...getTree() }));
+
   const [selectedRootId, setSelectedRootId] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [expandedObjectId, setExpandedObjectId] = useState<string | null>(null);
@@ -30,7 +32,6 @@ const Workspace = () => {
   const [isAddingObject, setIsAddingObject] = useState(false);
   const [newObjectName, setNewObjectName] = useState('');
 
-  const [, forceUpdate] = useState(0);
   const addObjectInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -39,7 +40,7 @@ const Workspace = () => {
 
   const { logout } = useLogout();
 
-  const rootCompanies = getRootCompanies();
+  const rootCompanies = ROOT_COMPANY_IDS.map((id) => tree[id]).filter(Boolean);
 
   const handleSelectRoot = (id: string) => {
     setSelectedRootId(id);
@@ -72,7 +73,7 @@ const Workspace = () => {
     setIsAddingSubsidiary(false);
     setSelectedNodeId(newNode.id);
     setExpandedObjectId(null);
-    forceUpdate((n) => n + 1);
+    setTree({ ...getTree() });
   };
 
   const handleConfirmAddObject = () => {
@@ -81,11 +82,19 @@ const Workspace = () => {
     addInsuranceObject(selectedNodeId, name);
     setNewObjectName('');
     setIsAddingObject(false);
-    forceUpdate((n) => n + 1);
+    setTree({ ...getTree() });
   };
 
-  const childNodes = selectedNodeId ? getChildCompanies(selectedNodeId) : [];
-  const currentObjects = selectedNodeId ? getInsuranceObjects(selectedNodeId) : [];
+  const handleVerifyField = (nodeId: string, objectId: string) => {
+    const updated = incrementFieldVerified(nodeId, objectId);
+    setTree({ ...updated });
+  };
+
+  const currentNode = selectedNodeId ? tree[selectedNodeId] : null;
+  const childNodes = currentNode
+    ? currentNode.childCompanyIds.map((id) => tree[id]).filter(Boolean)
+    : [];
+  const currentObjects = currentNode ? currentNode.insuranceObjects : [];
   const path = selectedNodeId ? getPathToNode(selectedNodeId) : [];
 
   return (
@@ -99,6 +108,7 @@ const Workspace = () => {
           searchValue={search}
           onSearchChange={setSearch}
           onLogout={logout}
+          tree={tree}
         />
       }
     >
@@ -195,11 +205,12 @@ const Workspace = () => {
 
                 {childNodes.map((node) => {
                   const isSelected = selectedNodeId === node.id;
+                  const progress = getNodeProgress(node.id, tree);
                   return (
                     <button
                       key={node.id}
                       onClick={() => handleSelectNode(node.id)}
-                      className="w-full text-left px-10 py-2 text-sm transition-colors"
+                      className="w-full text-left flex items-center gap-3 px-10 py-2 text-sm transition-colors"
                       style={{
                         backgroundColor: isSelected ? 'var(--pw-bg-tertiary)' : 'transparent',
                         color: 'var(--pw-text-primary)',
@@ -209,7 +220,8 @@ const Workspace = () => {
                       onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; }}
                       onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent'; }}
                     >
-                      {node.name}
+                      <span className="flex-1">{node.name}</span>
+                      <ProgressPill pct={progress.pct} />
                     </button>
                   );
                 })}
@@ -282,6 +294,8 @@ const Workspace = () => {
                   objects={currentObjects}
                   expandedObjectId={expandedObjectId}
                   onToggleObject={handleToggleObject}
+                  nodeId={selectedNodeId!}
+                  onVerifyField={handleVerifyField}
                 />
               </div>
             )}

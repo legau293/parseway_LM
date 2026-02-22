@@ -1,6 +1,9 @@
 import React from 'react';
 import { Settings, HelpCircle, Search, Building2, LogOut } from 'lucide-react';
 import Logo from '@/components/ui/Logo';
+import ProgressPill from './ProgressPill';
+import { getNodeProgress } from '@/utils/progress';
+import { OrgTree } from '@/data/mockOrgTree';
 
 interface WorkspaceSidebarProps {
   companies: string[];
@@ -10,6 +13,7 @@ interface WorkspaceSidebarProps {
   searchValue: string;
   onSearchChange: (value: string) => void;
   onLogout: () => void;
+  tree: OrgTree;
 }
 
 const WorkspaceSidebar = ({
@@ -20,6 +24,7 @@ const WorkspaceSidebar = ({
   searchValue,
   onSearchChange,
   onLogout,
+  tree,
 }: WorkspaceSidebarProps) => {
   const filtered = companies.filter((id) =>
     (companyNames[id] ?? id).toLowerCase().includes(searchValue.toLowerCase())
@@ -67,6 +72,7 @@ const WorkspaceSidebar = ({
           filtered.map((id) => {
             const isSelected = selectedCompany === id;
             const name = companyNames[id] ?? id;
+            const progress = getNodeProgress(id, tree);
             return (
               <button
                 key={id}
@@ -85,7 +91,8 @@ const WorkspaceSidebar = ({
                 }}
               >
                 <Building2 size={14} style={{ flexShrink: 0, opacity: 0.6 }} />
-                {name}
+                <span className="flex-1 truncate">{name}</span>
+                <ProgressPill pct={progress.pct} barWidth={56} />
               </button>
             );
           })

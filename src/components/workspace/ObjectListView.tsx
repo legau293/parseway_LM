@@ -10,51 +10,90 @@ interface ObjectListViewProps {
   objects: InsuranceObject[];
   expandedObjectId: string | null;
   onToggleObject: (id: string) => void;
+  nodeId: string;
+  onVerifyField: (nodeId: string, objectId: string) => void;
 }
 
-const ThreeColumnDropdown = ({ object }: { object: InsuranceObject }) => (
-  <div style={{ borderTop: '1px solid var(--pw-border)', borderBottom: '1px solid var(--pw-border)' }}>
-    <div className="grid grid-cols-3">
-      {(['Struktur', 'Hänvisning', 'Dokument'] as const).map((col, i) => (
-        <div
-          key={col}
-          className="px-6 py-2 text-xs"
-          style={{
-            color: 'var(--pw-text-tertiary)',
-            fontWeight: 500,
-            borderRight: i < 2 ? '1px solid var(--pw-border)' : undefined,
-            borderBottom: '1px solid var(--pw-border)',
-          }}
-        >
-          {col}
+const ThreeColumnDropdown = ({
+  object,
+  nodeId,
+  onVerifyField,
+}: {
+  object: InsuranceObject;
+  nodeId: string;
+  onVerifyField: (nodeId: string, objectId: string) => void;
+}) => {
+  const remaining = object.fieldsTotal - object.fieldsVerified;
+  return (
+    <div style={{ borderTop: '1px solid var(--pw-border)', borderBottom: '1px solid var(--pw-border)' }}>
+      <div className="grid grid-cols-3">
+        {(['Struktur', 'Hänvisning', 'Dokument'] as const).map((col, i) => (
+          <div
+            key={col}
+            className="px-6 py-2 text-xs"
+            style={{
+              color: 'var(--pw-text-tertiary)',
+              fontWeight: 500,
+              borderRight: i < 2 ? '1px solid var(--pw-border)' : undefined,
+              borderBottom: '1px solid var(--pw-border)',
+            }}
+          >
+            {col}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-3">
+        <div className="px-6 py-4" style={{ borderRight: '1px solid var(--pw-border)' }}>
+          <p className="text-xs mb-1" style={{ color: 'var(--pw-text-secondary)' }}>Strukturgrad</p>
+          <p className="text-sm" style={{ color: 'var(--pw-text-primary)', fontWeight: 500 }}>{object.structurePct}%</p>
+          <p className="text-xs mt-2" style={{ color: 'var(--pw-text-tertiary)' }}>Byggnadsår, yta, konstruktion</p>
         </div>
-      ))}
+        <div className="px-6 py-4" style={{ borderRight: '1px solid var(--pw-border)' }}>
+          <p className="text-xs mb-1" style={{ color: 'var(--pw-text-secondary)' }}>Verifierade fält</p>
+          <p className="text-sm" style={{ color: 'var(--pw-text-primary)', fontWeight: 500 }}>
+            {object.fieldsVerified} / {object.fieldsTotal}
+          </p>
+          <div className="mt-3">
+            {remaining > 0 ? (
+              <button
+                onClick={() => onVerifyField(nodeId, object.id)}
+                className="text-xs px-2 py-1 rounded transition-colors"
+                style={{
+                  border: '1px solid var(--pw-border)',
+                  color: 'var(--pw-text-secondary)',
+                  backgroundColor: 'transparent',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--pw-accent-red)';
+                  e.currentTarget.style.color = 'var(--pw-text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--pw-border)';
+                  e.currentTarget.style.color = 'var(--pw-text-secondary)';
+                }}
+              >
+                Markera 1 fält som verifierat
+              </button>
+            ) : (
+              <span className="text-xs" style={{ color: '#2DB7A3' }}>Alla fält verifierade</span>
+            )}
+          </div>
+        </div>
+        <div className="px-6 py-4">
+          <p className="text-xs mb-1" style={{ color: 'var(--pw-text-secondary)' }}>Saknade dokument</p>
+          <p className="text-sm" style={{ color: object.missingCount > 0 ? 'var(--pw-accent-red)' : 'var(--pw-text-primary)', fontWeight: 500 }}>
+            {object.missingCount}
+          </p>
+          <p className="text-xs mt-2" style={{ color: 'var(--pw-text-tertiary)' }}>Ritningar, certifikat</p>
+        </div>
+      </div>
     </div>
-    <div className="grid grid-cols-3">
-      <div className="px-6 py-4" style={{ borderRight: '1px solid var(--pw-border)' }}>
-        <p className="text-xs mb-1" style={{ color: 'var(--pw-text-secondary)' }}>Strukturgrad</p>
-        <p className="text-sm" style={{ color: 'var(--pw-text-primary)', fontWeight: 500 }}>{object.structurePct}%</p>
-        <p className="text-xs mt-2" style={{ color: 'var(--pw-text-tertiary)' }}>Byggnadsår, yta, konstruktion</p>
-      </div>
-      <div className="px-6 py-4" style={{ borderRight: '1px solid var(--pw-border)' }}>
-        <p className="text-xs mb-1" style={{ color: 'var(--pw-text-secondary)' }}>Verifieringsgrad</p>
-        <p className="text-sm" style={{ color: 'var(--pw-text-primary)', fontWeight: 500 }}>{object.verifiedPct}%</p>
-        <p className="text-xs mt-2" style={{ color: 'var(--pw-text-tertiary)' }}>Försäkringsbevis, avtal</p>
-      </div>
-      <div className="px-6 py-4">
-        <p className="text-xs mb-1" style={{ color: 'var(--pw-text-secondary)' }}>Saknade dokument</p>
-        <p className="text-sm" style={{ color: object.missingCount > 0 ? 'var(--pw-accent-red)' : 'var(--pw-text-primary)', fontWeight: 500 }}>
-          {object.missingCount}
-        </p>
-        <p className="text-xs mt-2" style={{ color: 'var(--pw-text-tertiary)' }}>Ritningar, certifikat</p>
-      </div>
-    </div>
-  </div>
-);
+  );
+};
 
 const OBJECT_TYPES = ['Alla', 'Fastighet', 'Bil', 'Maskin'];
 
-const ObjectListView = ({ objects, expandedObjectId, onToggleObject }: ObjectListViewProps) => {
+const ObjectListView = ({ objects, expandedObjectId, onToggleObject, nodeId, onVerifyField }: ObjectListViewProps) => {
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [search, setSearch] = useState('');
@@ -142,7 +181,7 @@ const ObjectListView = ({ objects, expandedObjectId, onToggleObject }: ObjectLis
         )}
 
         <span className="ml-auto text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>
-          {sorted.length} {sorted.length === 1 ? 'objekt' : 'objekt'}
+          {sorted.length} objekt
         </span>
       </div>
 
@@ -161,7 +200,11 @@ const ObjectListView = ({ objects, expandedObjectId, onToggleObject }: ObjectLis
               onClick={() => onToggleObject(obj.id)}
             />
             {expandedObjectId === obj.id && (
-              <ThreeColumnDropdown object={obj} />
+              <ThreeColumnDropdown
+                object={obj}
+                nodeId={nodeId}
+                onVerifyField={onVerifyField}
+              />
             )}
           </React.Fragment>
         ))
