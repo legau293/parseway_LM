@@ -16,6 +16,14 @@ import {
 } from '@/data/mockOrgTree';
 import { getNodeProgress } from '@/utils/progress';
 
+const OBJECT_TYPE_OPTIONS = ['Fastighet', 'Bil', 'Maskin'];
+
+interface NewObjectForm {
+  objectType: string;
+  name: string;
+  description: string;
+}
+
 const Workspace = () => {
   const [tree, setTree] = useState<OrgTree>(() => ({ ...getTree() }));
 
@@ -29,13 +37,14 @@ const Workspace = () => {
 
   const [isAddingSubsidiary, setIsAddingSubsidiary] = useState(false);
   const [newSubsidiaryName, setNewSubsidiaryName] = useState('');
-  const [isAddingObject, setIsAddingObject] = useState(false);
-  const [newObjectName, setNewObjectName] = useState('');
 
-  const addObjectInputRef = useRef<HTMLInputElement>(null);
+  const [isAddingObject, setIsAddingObject] = useState(false);
+  const [newObjectForm, setNewObjectForm] = useState<NewObjectForm>({ objectType: 'Fastighet', name: '', description: '' });
+
+  const createRowTypeRef = useRef<HTMLSelectElement>(null);
 
   useEffect(() => {
-    if (isAddingObject) addObjectInputRef.current?.focus();
+    if (isAddingObject) createRowTypeRef.current?.focus();
   }, [isAddingObject]);
 
   const { logout } = useLogout();
@@ -49,7 +58,7 @@ const Workspace = () => {
     setIsAddingSubsidiary(false);
     setIsAddingObject(false);
     setNewSubsidiaryName('');
-    setNewObjectName('');
+    setNewObjectForm({ objectType: 'Fastighet', name: '', description: '' });
   };
 
   const handleSelectNode = (id: string) => {
@@ -58,7 +67,7 @@ const Workspace = () => {
     setIsAddingSubsidiary(false);
     setIsAddingObject(false);
     setNewSubsidiaryName('');
-    setNewObjectName('');
+    setNewObjectForm({ objectType: 'Fastighet', name: '', description: '' });
   };
 
   const handleToggleObject = (id: string) => {
@@ -76,11 +85,20 @@ const Workspace = () => {
     setTree({ ...getTree() });
   };
 
+  const isNewObjectValid = () =>
+    newObjectForm.objectType.trim() !== '' ||
+    newObjectForm.name.trim() !== '' ||
+    newObjectForm.description.trim() !== '';
+
   const handleConfirmAddObject = () => {
-    const name = newObjectName.trim();
-    if (!name || !selectedNodeId) return;
-    addInsuranceObject(selectedNodeId, name);
-    setNewObjectName('');
+    if (!isNewObjectValid() || !selectedNodeId) return;
+    addInsuranceObject(
+      selectedNodeId,
+      newObjectForm.name.trim(),
+      newObjectForm.objectType.trim() || 'Fastighet',
+      newObjectForm.description.trim(),
+    );
+    setNewObjectForm({ objectType: 'Fastighet', name: '', description: '' });
     setIsAddingObject(false);
     setTree({ ...getTree() });
   };
@@ -96,6 +114,9 @@ const Workspace = () => {
     : [];
   const currentObjects = currentNode ? currentNode.insuranceObjects : [];
   const path = selectedNodeId ? getPathToNode(selectedNodeId) : [];
+
+  const rootNode = selectedRootId ? tree[selectedRootId] : null;
+  const rootProgress = selectedRootId ? getNodeProgress(selectedRootId, tree) : null;
 
   return (
     <WorkspaceShell
@@ -124,14 +145,25 @@ const Workspace = () => {
             <p className="text-sm" style={{ color: 'var(--pw-text-secondary)', lineHeight: '1.6' }}>
               Välj ett moderbolag i panelen till vänster för att komma igång.
             </p>
-            <p className="text-xs mt-4" style={{ color: 'var(--pw-text-tertiary)' }}>
-              Här kommer 3-kolumnsgränssnittet för valt objekt.
-            </p>
           </div>
         </div>
       ) : (
         <div className="flex flex-col">
-          <div className="px-10 pt-8 pb-0 max-w-5xl">
+          <div
+            className="px-10 pt-8 pb-4"
+            style={{ borderBottom: '1px solid var(--pw-border)' }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <h1
+                className="text-base font-medium truncate"
+                style={{ color: 'var(--pw-text-primary)' }}
+              >
+                {rootNode?.name ?? ''}
+              </h1>
+              {rootProgress && (
+                <ProgressPill pct={rootProgress.pct} showPct={true} barWidth={100} />
+              )}
+            </div>
             <WorkspaceHeader
               path={path.map((n) => ({ id: n.id, name: n.name }))}
               onSelectNode={handleSelectNode}
@@ -266,28 +298,16 @@ const Workspace = () => {
             {isObjectsOpen && (
               <div>
                 {isAddingObject && (
-                  <div className="flex items-center gap-2 px-10 py-1.5">
-                    <input
-                      ref={addObjectInputRef}
-                      value={newObjectName}
-                      onChange={(e) => setNewObjectName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleConfirmAddObject();
-                        if (e.key === 'Escape') { setIsAddingObject(false); setNewObjectName(''); }
-                      }}
-                      placeholder="Namn på objekt..."
-                      className="flex-1 max-w-xs text-sm px-2 py-1 rounded outline-none"
-                      style={{
-                        backgroundColor: 'var(--pw-bg-primary)',
-                        border: '1px solid var(--pw-border)',
-                        color: 'var(--pw-text-primary)',
-                      }}
-                      onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--pw-accent-red)')}
-                      onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--pw-border)')}
-                    />
-                    <button onClick={handleConfirmAddObject} className="text-xs" style={{ color: 'var(--pw-text-secondary)' }}>OK</button>
-                    <button onClick={() => { setIsAddingObject(false); setNewObjectName(''); }} className="text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>Avbryt</button>
-                  </div>
+                  <CreateObjectRow
+                    form={newObjectForm}
+                    onChange={setNewObjectForm}
+                    onConfirm={handleConfirmAddObject}
+                    onCancel={() => {
+                      setIsAddingObject(false);
+                      setNewObjectForm({ objectType: 'Fastighet', name: '', description: '' });
+                    }}
+                    typeRef={createRowTypeRef}
+                  />
                 )}
 
                 <ObjectListView
@@ -303,6 +323,120 @@ const Workspace = () => {
         </div>
       )}
     </WorkspaceShell>
+  );
+};
+
+const inputStyle: React.CSSProperties = {
+  backgroundColor: 'var(--pw-bg-primary)',
+  border: '1px solid var(--pw-border)',
+  color: 'var(--pw-text-primary)',
+  borderRadius: '4px',
+  fontSize: '12px',
+  padding: '4px 8px',
+  outline: 'none',
+  width: '100%',
+};
+
+const CreateObjectRow = ({
+  form,
+  onChange,
+  onConfirm,
+  onCancel,
+  typeRef,
+}: {
+  form: NewObjectForm;
+  onChange: (f: NewObjectForm) => void;
+  onConfirm: () => void;
+  onCancel: () => void;
+  typeRef: React.RefObject<HTMLSelectElement>;
+}) => {
+  const valid =
+    form.objectType.trim() !== '' ||
+    form.name.trim() !== '' ||
+    form.description.trim() !== '';
+
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && valid) onConfirm();
+    if (e.key === 'Escape') onCancel();
+  };
+
+  const focusBorder = (e: React.FocusEvent<HTMLElement>) => {
+    (e.currentTarget as HTMLElement).style.borderColor = 'var(--pw-accent-red)';
+  };
+  const blurBorder = (e: React.FocusEvent<HTMLElement>) => {
+    (e.currentTarget as HTMLElement).style.borderColor = 'var(--pw-border)';
+  };
+
+  return (
+    <div
+      className="grid grid-cols-[140px_220px_1fr_200px] items-center gap-2 px-4 py-2"
+      style={{ borderBottom: '1px solid var(--pw-border)', backgroundColor: 'var(--pw-bg-secondary)' }}
+    >
+      <select
+        ref={typeRef}
+        value={form.objectType}
+        onChange={(e) => onChange({ ...form, objectType: e.target.value })}
+        onKeyDown={handleKey}
+        onFocus={focusBorder}
+        onBlur={blurBorder}
+        style={{ ...inputStyle, cursor: 'pointer' }}
+      >
+        {OBJECT_TYPE_OPTIONS.map((t) => (
+          <option key={t} value={t}>{t}</option>
+        ))}
+      </select>
+
+      <input
+        value={form.name}
+        onChange={(e) => onChange({ ...form, name: e.target.value })}
+        onKeyDown={handleKey}
+        onFocus={focusBorder}
+        onBlur={blurBorder}
+        placeholder="Namn..."
+        style={inputStyle}
+      />
+
+      <input
+        value={form.description}
+        onChange={(e) => onChange({ ...form, description: e.target.value })}
+        onKeyDown={handleKey}
+        onFocus={focusBorder}
+        onBlur={blurBorder}
+        placeholder="Beskrivning..."
+        style={{ ...inputStyle, marginRight: '8px' }}
+      />
+
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onConfirm}
+          disabled={!valid}
+          className="text-xs px-2.5 py-1 rounded transition-colors"
+          style={{
+            border: `1px solid ${valid ? 'var(--pw-accent-red)' : 'var(--pw-border)'}`,
+            color: valid ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)',
+            backgroundColor: 'transparent',
+            cursor: valid ? 'pointer' : 'default',
+            opacity: valid ? 1 : 0.5,
+          }}
+        >
+          Skapa
+        </button>
+        <button
+          onClick={onCancel}
+          className="text-xs transition-colors"
+          style={{ color: 'var(--pw-text-tertiary)' }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--pw-text-secondary)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--pw-text-tertiary)')}
+        >
+          Avbryt
+        </button>
+        {!valid && (
+          <span className="text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>
+            Fyll i minst ett fält
+          </span>
+        )}
+      </div>
+    </div>
   );
 };
 

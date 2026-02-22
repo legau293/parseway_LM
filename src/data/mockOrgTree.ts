@@ -41,8 +41,8 @@ const buildInitialTree = (): OrgTree => ({
     id: 'volvo-fastigheter-goteborg', name: 'Volvo Fastigheter Göteborg AB', parentId: 'volvo-fastigheter',
     childCompanyIds: [],
     insuranceObjects: [
-      { id: 'vfg-1', name: 'Hamnterminal Göteborg', objectType: 'Fastighet', description: 'Godshanteringsterminal vid Göteborgs hamn', completedPct: 76, structurePct: 83, verifiedPct: 70, missingCount: 3, fieldsTotal: 22, fieldsVerified: 15 },
-      { id: 'vfg-2', name: 'Kontorshus Lindholmen', objectType: 'Fastighet', description: 'Modernt kontor i Göteborgs innovationsdistrikt', completedPct: 88, structurePct: 91, verifiedPct: 85, missingCount: 1, fieldsTotal: 20, fieldsVerified: 17 },
+      { id: 'vfg-1', name: 'Hamnterminal Göteborg', objectType: 'Fastighet', description: 'Godshanteringsterminal vid Göteborgs hamn', completedPct: 100, structurePct: 100, verifiedPct: 100, missingCount: 0, fieldsTotal: 22, fieldsVerified: 22 },
+      { id: 'vfg-2', name: 'Kontorshus Lindholmen', objectType: 'Fastighet', description: 'Modernt kontor i Göteborgs innovationsdistrikt', completedPct: 100, structurePct: 100, verifiedPct: 100, missingCount: 0, fieldsTotal: 20, fieldsVerified: 20 },
     ],
   },
   'volvo-logistik': {
@@ -159,17 +159,17 @@ const buildInitialTree = (): OrgTree => ({
     id: 'hexagon-teknik', name: 'Hexagon Teknik AB', parentId: 'hexagon',
     childCompanyIds: [],
     insuranceObjects: [
-      { id: 'ht-1', name: 'Teknikcenter Kista', objectType: 'Fastighet', description: 'FoU-center för sensorer och mätning', completedPct: 81, structurePct: 87, verifiedPct: 75, missingCount: 2, fieldsTotal: 22, fieldsVerified: 17 },
-      { id: 'ht-2', name: 'FoU-anläggning Bromma', objectType: 'Fastighet', description: 'Laboratorier och prototypverkstad', completedPct: 57, structurePct: 65, verifiedPct: 50, missingCount: 6, fieldsTotal: 18, fieldsVerified: 9 },
-      { id: 'ht-3', name: 'Datacenter Täby', objectType: 'Maskin', description: 'Primärt datacenter med redundant kylning', completedPct: 90, structurePct: 93, verifiedPct: 88, missingCount: 1, fieldsTotal: 16, fieldsVerified: 14 },
+      { id: 'ht-1', name: 'Teknikcenter Kista', objectType: 'Fastighet', description: 'FoU-center för sensorer och mätning', completedPct: 100, structurePct: 100, verifiedPct: 100, missingCount: 0, fieldsTotal: 22, fieldsVerified: 22 },
+      { id: 'ht-2', name: 'FoU-anläggning Bromma', objectType: 'Fastighet', description: 'Laboratorier och prototypverkstad', completedPct: 100, structurePct: 100, verifiedPct: 100, missingCount: 0, fieldsTotal: 18, fieldsVerified: 18 },
+      { id: 'ht-3', name: 'Datacenter Täby', objectType: 'Maskin', description: 'Primärt datacenter med redundant kylning', completedPct: 100, structurePct: 100, verifiedPct: 100, missingCount: 0, fieldsTotal: 16, fieldsVerified: 16 },
     ],
   },
   'hexagon-fastigheter': {
     id: 'hexagon-fastigheter', name: 'Hexagon Fastigheter AB', parentId: 'hexagon',
     childCompanyIds: [],
     insuranceObjects: [
-      { id: 'hf-1', name: 'Kontorshus Stockholm', objectType: 'Fastighet', description: 'Centralt placerat kontor, 8 våningar', completedPct: 73, structurePct: 80, verifiedPct: 66, missingCount: 3, fieldsTotal: 20, fieldsVerified: 14 },
-      { id: 'hf-2', name: 'Representationslokal Lidingö', objectType: 'Fastighet', description: 'Exklusiv representationsyta med sjöutsikt', completedPct: 98, structurePct: 100, verifiedPct: 97, missingCount: 0, fieldsTotal: 12, fieldsVerified: 12 },
+      { id: 'hf-1', name: 'Kontorshus Stockholm', objectType: 'Fastighet', description: 'Centralt placerat kontor, 8 våningar', completedPct: 100, structurePct: 100, verifiedPct: 100, missingCount: 0, fieldsTotal: 20, fieldsVerified: 20 },
+      { id: 'hf-2', name: 'Representationslokal Lidingö', objectType: 'Fastighet', description: 'Exklusiv representationsyta med sjöutsikt', completedPct: 100, structurePct: 100, verifiedPct: 100, missingCount: 0, fieldsTotal: 12, fieldsVerified: 12 },
     ],
   },
   'epiroc': {
@@ -272,17 +272,17 @@ export function addChildNode(parentId: string, name: string): CompanyNode {
   return newNode;
 }
 
-export function addInsuranceObject(nodeId: string, name: string): InsuranceObject {
+export function addInsuranceObject(nodeId: string, name: string, objectType = 'Fastighet', description = ''): InsuranceObject {
   const newObj: InsuranceObject = {
     id: `custom-obj-${Date.now()}`,
     name,
-    objectType: 'Fastighet',
-    description: '',
+    objectType,
+    description,
     completedPct: 0,
     structurePct: 0,
     verifiedPct: 0,
     missingCount: 0,
-    fieldsTotal: 20,
+    fieldsTotal: 12,
     fieldsVerified: 0,
   };
   const node = _tree[nodeId];

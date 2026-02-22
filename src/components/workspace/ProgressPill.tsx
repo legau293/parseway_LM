@@ -16,12 +16,12 @@ const ProgressPill = ({ pct, showPct = true, barWidth = 84 }: ProgressPillProps)
         className="h-full rounded-full"
         style={{
           width: `${pct}%`,
-          background: 'linear-gradient(90deg, #E5483F 0%, #2DB7A3 100%)',
+          background: pct === 100 ? '#2DB7A3' : 'linear-gradient(90deg, #E5483F 0%, #2DB7A3 100%)',
           transition: 'width 0.3s ease',
         }}
       />
     </div>
-    {showPct && (
+    {showPct && pct < 100 && (
       <span
         className="text-xs tabular-nums"
         style={{ color: 'var(--pw-text-tertiary)', minWidth: '28px', textAlign: 'right' }}

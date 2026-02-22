@@ -92,7 +92,7 @@ const WorkspaceSidebar = ({
               >
                 <Building2 size={14} style={{ flexShrink: 0, opacity: 0.6 }} />
                 <span className="flex-1 truncate">{name}</span>
-                <ProgressPill pct={progress.pct} barWidth={56} />
+                <ProgressPill pct={progress.pct} barWidth={56} showPct={false} />
               </button>
             );
           })

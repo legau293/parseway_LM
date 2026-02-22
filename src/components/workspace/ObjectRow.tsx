@@ -18,14 +18,16 @@ const ProgressBar = ({ pct }: { pct: number }) => (
         className="h-full rounded-full"
         style={{
           width: `${pct}%`,
-          background: 'linear-gradient(90deg, #E5483F 0%, #2DB7A3 100%)',
+          background: pct === 100 ? '#2DB7A3' : 'linear-gradient(90deg, #E5483F 0%, #2DB7A3 100%)',
           transition: 'width 0.3s ease',
         }}
       />
     </div>
-    <span className="text-xs shrink-0 tabular-nums" style={{ color: 'var(--pw-text-secondary)', minWidth: '32px' }}>
-      {pct}%
-    </span>
+    {pct < 100 && (
+      <span className="text-xs shrink-0 tabular-nums" style={{ color: 'var(--pw-text-secondary)', minWidth: '32px' }}>
+        {pct}%
+      </span>
+    )}
   </div>
 );
 
