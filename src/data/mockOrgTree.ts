@@ -294,6 +294,37 @@ export function updateInsuranceObject(
   }
 }
 
+export function deleteInsuranceObjects(
+  rootId: string,
+  subsidiaryId: string | null,
+  objIds: string[]
+): void {
+  const root = _tree[rootId];
+  if (!root) return;
+  const idSet = new Set(objIds);
+  if (subsidiaryId === null) {
+    _tree = {
+      ..._tree,
+      [rootId]: {
+        ...root,
+        rootInsuranceObjects: root.rootInsuranceObjects.filter((o) => !idSet.has(o.id)),
+      },
+    };
+  } else {
+    _tree = {
+      ..._tree,
+      [rootId]: {
+        ...root,
+        subsidiaries: root.subsidiaries.map((s) =>
+          s.id === subsidiaryId
+            ? { ...s, insuranceObjects: s.insuranceObjects.filter((o) => !idSet.has(o.id)) }
+            : s
+        ),
+      },
+    };
+  }
+}
+
 export function incrementFieldVerified(
   rootId: string,
   subsidiaryId: string | null,

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Search, Plus, Trash2 } from 'lucide-react';
+import { Search, Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { useLogout } from '@/services/authService';
 import WorkspaceShell from '@/components/workspace/WorkspaceShell';
 import WorkspaceSidebar from '@/components/workspace/WorkspaceSidebar';
@@ -12,6 +12,7 @@ import {
   addRootCompany,
   addSubsidiary,
   deleteSubsidiaries,
+  deleteInsuranceObjects,
   addInsuranceObject,
   incrementFieldVerified,
   updateInsuranceObject,
@@ -87,7 +88,7 @@ function OrgNrChip({ orgnr, onCopied }: { orgnr: string; onCopied: () => void })
   );
 }
 
-interface InlinePanelProps {
+interface SubInlinePanelProps {
   panel: Panel;
   subSearch: string;
   setSubSearch: (v: string) => void;
@@ -100,55 +101,26 @@ interface InlinePanelProps {
 }
 
 function SubInlinePanel({
-  panel,
-  subSearch,
-  setSubSearch,
-  subAddValue,
-  setSubAddValue,
-  onAddSubsidiary,
-  onBulkDelete,
-  selectedCount,
-  onClose,
-}: InlinePanelProps) {
+  panel, subSearch, setSubSearch, subAddValue, setSubAddValue,
+  onAddSubsidiary, onBulkDelete, selectedCount, onClose,
+}: SubInlinePanelProps) {
   if (panel === 'search') {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-        <input
-          autoFocus
-          value={subSearch}
-          onChange={(e) => setSubSearch(e.target.value)}
+        <input autoFocus value={subSearch} onChange={(e) => setSubSearch(e.target.value)}
           onKeyDown={(e) => e.key === 'Escape' && onClose()}
-          placeholder="Sök dotterbolag…"
-          style={{ ...inputBase, width: '180px' }}
-        />
+          placeholder="Sök dotterbolag…" style={{ ...inputBase, width: '180px' }} />
       </div>
     );
   }
   if (panel === 'add') {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-        <input
-          autoFocus
-          value={subAddValue}
-          onChange={(e) => setSubAddValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') onAddSubsidiary();
-            if (e.key === 'Escape') onClose();
-          }}
-          placeholder="Dotterbolagsnamn…"
-          style={{ ...inputBase, width: '200px' }}
-        />
-        <button
-          onClick={onAddSubsidiary}
-          disabled={!subAddValue.trim()}
-          style={{
-            ...inputBase,
-            padding: '4px 10px',
-            cursor: subAddValue.trim() ? 'pointer' : 'default',
-            opacity: subAddValue.trim() ? 1 : 0.5,
-            flexShrink: 0,
-          }}
-        >
+        <input autoFocus value={subAddValue} onChange={(e) => setSubAddValue(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') onAddSubsidiary(); if (e.key === 'Escape') onClose(); }}
+          placeholder="Dotterbolagsnamn…" style={{ ...inputBase, width: '200px' }} />
+        <button onClick={onAddSubsidiary} disabled={!subAddValue.trim()}
+          style={{ ...inputBase, padding: '4px 10px', cursor: subAddValue.trim() ? 'pointer' : 'default', opacity: subAddValue.trim() ? 1 : 0.5, flexShrink: 0 }}>
           Lägg till
         </button>
       </div>
@@ -157,21 +129,9 @@ function SubInlinePanel({
   if (panel === 'delete') {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <span style={{ fontSize: '12px', color: 'var(--pw-text-secondary)' }}>
-          {selectedCount} markerade
-        </span>
-        <button
-          onClick={onBulkDelete}
-          disabled={selectedCount === 0}
-          style={{
-            ...inputBase,
-            padding: '3px 10px',
-            color: selectedCount > 0 ? '#E5483F' : 'var(--pw-text-tertiary)',
-            cursor: selectedCount > 0 ? 'pointer' : 'default',
-            opacity: selectedCount > 0 ? 1 : 0.5,
-            borderColor: selectedCount > 0 ? '#E5483F' : 'var(--pw-border)',
-          }}
-        >
+        <span style={{ fontSize: '12px', color: 'var(--pw-text-secondary)' }}>{selectedCount} markerade</span>
+        <button onClick={onBulkDelete} disabled={selectedCount === 0}
+          style={{ ...inputBase, padding: '3px 10px', color: selectedCount > 0 ? '#E5483F' : 'var(--pw-text-tertiary)', cursor: selectedCount > 0 ? 'pointer' : 'default', opacity: selectedCount > 0 ? 1 : 0.5, borderColor: selectedCount > 0 ? '#E5483F' : 'var(--pw-border)' }}>
           Ta bort
         </button>
       </div>
@@ -189,36 +149,22 @@ interface ObjInlinePanelProps {
   objAddForm: NewObjectForm;
   setObjAddForm: React.Dispatch<React.SetStateAction<NewObjectForm>>;
   onAddObject: () => void;
+  onBulkDeleteObjects: () => void;
+  selectedCount: number;
   onClose: () => void;
 }
 
 function ObjInlinePanel({
-  panel,
-  objSearch,
-  setObjSearch,
-  objTypeFilter,
-  setObjTypeFilter,
-  objAddForm,
-  setObjAddForm,
-  onAddObject,
-  onClose,
+  panel, objSearch, setObjSearch, objTypeFilter, setObjTypeFilter,
+  objAddForm, setObjAddForm, onAddObject, onBulkDeleteObjects, selectedCount, onClose,
 }: ObjInlinePanelProps) {
   if (panel === 'search') {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-        <input
-          autoFocus
-          value={objSearch}
-          onChange={(e) => setObjSearch(e.target.value)}
+        <input autoFocus value={objSearch} onChange={(e) => setObjSearch(e.target.value)}
           onKeyDown={(e) => e.key === 'Escape' && onClose()}
-          placeholder="Sök objekt…"
-          style={{ ...inputBase, width: '160px' }}
-        />
-        <select
-          value={objTypeFilter}
-          onChange={(e) => setObjTypeFilter(e.target.value)}
-          style={{ ...inputBase }}
-        >
+          placeholder="Sök objekt…" style={{ ...inputBase, width: '160px' }} />
+        <select value={objTypeFilter} onChange={(e) => setObjTypeFilter(e.target.value)} style={{ ...inputBase }}>
           <option value="Alla">Alla typer</option>
           {OBJECT_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
@@ -228,46 +174,29 @@ function ObjInlinePanel({
   if (panel === 'add') {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'nowrap' }}>
-        <select
-          value={objAddForm.objectType}
-          onChange={(e) => setObjAddForm((f) => ({ ...f, objectType: e.target.value }))}
-          style={{ ...inputBase, width: '100px' }}
-        >
+        <select value={objAddForm.objectType} onChange={(e) => setObjAddForm((f) => ({ ...f, objectType: e.target.value }))} style={{ ...inputBase, width: '100px' }}>
           {OBJECT_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
-        <input
-          autoFocus
-          value={objAddForm.name}
-          onChange={(e) => setObjAddForm((f) => ({ ...f, name: e.target.value }))}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') onAddObject();
-            if (e.key === 'Escape') onClose();
-          }}
-          placeholder="Namn…"
-          style={{ ...inputBase, width: '140px' }}
-        />
-        <input
-          value={objAddForm.description}
-          onChange={(e) => setObjAddForm((f) => ({ ...f, description: e.target.value }))}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') onAddObject();
-            if (e.key === 'Escape') onClose();
-          }}
-          placeholder="Beskrivning…"
-          style={{ ...inputBase, width: '180px' }}
-        />
-        <button
-          onClick={onAddObject}
-          disabled={!objAddForm.name.trim()}
-          style={{
-            ...inputBase,
-            padding: '4px 10px',
-            cursor: objAddForm.name.trim() ? 'pointer' : 'default',
-            opacity: objAddForm.name.trim() ? 1 : 0.5,
-            flexShrink: 0,
-          }}
-        >
+        <input autoFocus value={objAddForm.name} onChange={(e) => setObjAddForm((f) => ({ ...f, name: e.target.value }))}
+          onKeyDown={(e) => { if (e.key === 'Enter') onAddObject(); if (e.key === 'Escape') onClose(); }}
+          placeholder="Namn…" style={{ ...inputBase, width: '140px' }} />
+        <input value={objAddForm.description} onChange={(e) => setObjAddForm((f) => ({ ...f, description: e.target.value }))}
+          onKeyDown={(e) => { if (e.key === 'Enter') onAddObject(); if (e.key === 'Escape') onClose(); }}
+          placeholder="Beskrivning…" style={{ ...inputBase, width: '180px' }} />
+        <button onClick={onAddObject} disabled={!objAddForm.name.trim()}
+          style={{ ...inputBase, padding: '4px 10px', cursor: objAddForm.name.trim() ? 'pointer' : 'default', opacity: objAddForm.name.trim() ? 1 : 0.5, flexShrink: 0 }}>
           Lägg till
+        </button>
+      </div>
+    );
+  }
+  if (panel === 'delete') {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <span style={{ fontSize: '12px', color: 'var(--pw-text-secondary)' }}>{selectedCount} markerade</span>
+        <button onClick={onBulkDeleteObjects} disabled={selectedCount === 0}
+          style={{ ...inputBase, padding: '3px 10px', color: selectedCount > 0 ? '#E5483F' : 'var(--pw-text-tertiary)', cursor: selectedCount > 0 ? 'pointer' : 'default', opacity: selectedCount > 0 ? 1 : 0.5, borderColor: selectedCount > 0 ? '#E5483F' : 'var(--pw-border)' }}>
+          Ta bort
         </button>
       </div>
     );
@@ -278,6 +207,8 @@ function ObjInlinePanel({
 interface SectionHeaderProps {
   title: string;
   count: number;
+  isOpen: boolean;
+  onToggleOpen: () => void;
   panel: Panel;
   onPanelToggle: (p: Panel) => void;
   showDelete?: boolean;
@@ -287,14 +218,8 @@ interface SectionHeaderProps {
 }
 
 function SectionHeader({
-  title,
-  count,
-  panel,
-  onPanelToggle,
-  showDelete,
-  deleteDisabled,
-  panelContent,
-  toolbarRef,
+  title, count, isOpen, onToggleOpen, panel, onPanelToggle,
+  showDelete, deleteDisabled, panelContent, toolbarRef,
 }: SectionHeaderProps) {
   const hasDeleteSelection = showDelete && !deleteDisabled;
   const deleteColor = hasDeleteSelection ? '#E5483F' : 'var(--pw-text-tertiary)';
@@ -303,9 +228,20 @@ function SectionHeader({
     <div
       ref={toolbarRef}
       className="flex items-center px-10 py-2 gap-2"
-      style={{ borderBottom: '1px solid var(--pw-border)', minHeight: '40px' }}
+      style={{ borderBottom: isOpen ? '1px solid var(--pw-border)' : 'none', minHeight: '40px', cursor: 'default' }}
     >
-      <span style={{ fontWeight: 500, color: 'var(--pw-text-primary)', fontSize: '14px', flexShrink: 0 }}>
+      <button
+        onClick={onToggleOpen}
+        style={{ ...iBtn, color: 'var(--pw-text-tertiary)', width: '20px', height: '20px', cursor: 'pointer' }}
+        title={isOpen ? 'Stäng' : 'Öppna'}
+      >
+        {isOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+      </button>
+
+      <span
+        onClick={onToggleOpen}
+        style={{ fontWeight: 500, color: 'var(--pw-text-primary)', fontSize: '14px', flexShrink: 0, cursor: 'pointer', userSelect: 'none' }}
+      >
         {title}
       </span>
       <span className="text-xs" style={{ color: 'var(--pw-text-tertiary)', flexShrink: 0 }}>
@@ -315,10 +251,7 @@ function SectionHeader({
       <button
         onClick={() => onPanelToggle(panel === 'search' ? null : 'search')}
         title="Sök"
-        style={{
-          ...iBtn,
-          color: panel === 'search' ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)',
-        }}
+        style={{ ...iBtn, color: panel === 'search' ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)' }}
         onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; e.currentTarget.style.color = 'var(--pw-text-primary)'; }}
         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = panel === 'search' ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)'; }}
       >
@@ -328,10 +261,7 @@ function SectionHeader({
       <button
         onClick={() => onPanelToggle(panel === 'add' ? null : 'add')}
         title="Lägg till"
-        style={{
-          ...iBtn,
-          color: panel === 'add' ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)',
-        }}
+        style={{ ...iBtn, color: panel === 'add' ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)' }}
         onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; e.currentTarget.style.color = 'var(--pw-text-primary)'; }}
         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = panel === 'add' ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)'; }}
       >
@@ -343,12 +273,7 @@ function SectionHeader({
           onClick={() => !deleteDisabled && onPanelToggle(panel === 'delete' ? null : 'delete')}
           disabled={deleteDisabled}
           title="Ta bort markerade"
-          style={{
-            ...iBtn,
-            color: panel === 'delete' ? '#C83B34' : deleteColor,
-            opacity: deleteDisabled ? 0.3 : 1,
-            cursor: deleteDisabled ? 'default' : 'pointer',
-          }}
+          style={{ ...iBtn, color: panel === 'delete' ? '#C83B34' : deleteColor, opacity: deleteDisabled ? 0.3 : 1, cursor: deleteDisabled ? 'default' : 'pointer' }}
           onMouseEnter={(e) => { if (!deleteDisabled) { e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; e.currentTarget.style.color = '#C83B34'; } }}
           onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = panel === 'delete' ? '#C83B34' : deleteColor; }}
         >
@@ -374,6 +299,10 @@ const Workspace = () => {
   const [sidebarSearch, setSidebarSearch] = useState('');
 
   const [selectedSubsidiaryIds, setSelectedSubsidiaryIds] = useState<Set<string>>(new Set());
+  const [selectedObjectIds, setSelectedObjectIds] = useState<Set<string>>(new Set());
+
+  const [subOpen, setSubOpen] = useState(true);
+  const [objOpen, setObjOpen] = useState(true);
 
   const [subPanel, setSubPanel] = useState<Panel>(null);
   const [subSearch, setSubSearch] = useState('');
@@ -403,12 +332,8 @@ const Workspace = () => {
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (subToolbarRef.current && !subToolbarRef.current.contains(target)) {
-        setSubPanel(null);
-      }
-      if (objToolbarRef.current && !objToolbarRef.current.contains(target)) {
-        setObjPanel(null);
-      }
+      if (subToolbarRef.current && !subToolbarRef.current.contains(target)) setSubPanel(null);
+      if (objToolbarRef.current && !objToolbarRef.current.contains(target)) setObjPanel(null);
     };
     document.addEventListener('mousedown', handleMouseDown);
     return () => document.removeEventListener('mousedown', handleMouseDown);
@@ -439,33 +364,32 @@ const Workspace = () => {
   const filteredObjects = currentObjects.filter((obj) => {
     const matchType = objTypeFilter === 'Alla' || obj.objectType === objTypeFilter;
     const q = objSearch.toLowerCase();
-    const matchSearch = !q ||
-      obj.name.toLowerCase().includes(q) ||
-      obj.objectType.toLowerCase().includes(q) ||
-      obj.description.toLowerCase().includes(q);
+    const matchSearch = !q || obj.name.toLowerCase().includes(q) || obj.objectType.toLowerCase().includes(q) || obj.description.toLowerCase().includes(q);
     return matchType && matchSearch;
   });
 
   const filteredSubsidiaries =
-    rootCompany?.subsidiaries.filter(
-      (s) => !subSearch || s.name.toLowerCase().includes(subSearch.toLowerCase())
-    ) ?? [];
+    rootCompany?.subsidiaries.filter((s) => !subSearch || s.name.toLowerCase().includes(subSearch.toLowerCase())) ?? [];
 
   const handleSelectRoot = (id: string) => {
     setSelectedRootId(id);
     setSelectedSubsidiaryId(null);
     setSelectedSubsidiaryIds(new Set());
+    setSelectedObjectIds(new Set());
     setExpandedObjectId(null);
     setSubPanel(null);
     setObjPanel(null);
     setSubSearch('');
     setObjSearch('');
     setObjTypeFilter('Alla');
+    setSubOpen(true);
+    setObjOpen(true);
   };
 
   const handleSelectSubsidiary = (id: string) => {
     setSelectedSubsidiaryId(id);
     setExpandedObjectId(null);
+    setSelectedObjectIds(new Set());
     setObjPanel(null);
     setObjSearch('');
     setObjTypeFilter('Alla');
@@ -474,18 +398,18 @@ const Workspace = () => {
   const handleBackToRoot = () => {
     setSelectedSubsidiaryId(null);
     setExpandedObjectId(null);
+    setSelectedObjectIds(new Set());
   };
 
   const handleLogoClick = () => {
     setSelectedRootId(null);
     setSelectedSubsidiaryId(null);
     setSelectedSubsidiaryIds(new Set());
+    setSelectedObjectIds(new Set());
   };
 
   const handleToggleFavorite = (id: string) => {
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
-    );
+    setFavorites((prev) => prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]);
   };
 
   const handleAddRootCompany = (name: string) => {
@@ -504,8 +428,15 @@ const Workspace = () => {
   const handleToggleSubsidiarySelect = (id: string) => {
     setSelectedSubsidiaryIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleToggleObjectSelect = (id: string) => {
+    setSelectedObjectIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
   };
@@ -521,13 +452,31 @@ const Workspace = () => {
     const step2 = window.prompt('Skriv OK för att bekräfta borttagningen.');
     if (step2 !== 'OK') return;
     const ids = Array.from(selectedSubsidiaryIds);
-    if (selectedSubsidiaryId && ids.includes(selectedSubsidiaryId)) {
-      setSelectedSubsidiaryId(null);
-    }
+    if (selectedSubsidiaryId && ids.includes(selectedSubsidiaryId)) setSelectedSubsidiaryId(null);
     deleteSubsidiaries(selectedRootId, ids);
     setTree(getTree());
     setSelectedSubsidiaryIds(new Set());
     showToast(`${count === 1 ? 'Dotterbolaget' : `${count} dotterbolag`} borttaget`);
+  };
+
+  const handleBulkDeleteObjects = () => {
+    if (!selectedRootId || selectedObjectIds.size === 0) return;
+    setObjPanel(null);
+    const count = selectedObjectIds.size;
+    const step1 = window.confirm(
+      `Vill du ta bort ${count === 1 ? 'försäkringsobjektet' : `${count} försäkringsobjekt`}?`
+    );
+    if (!step1) return;
+    const step2 = window.prompt(
+      `${count === 1 ? 'Försäkringsobjektet' : 'Objekten'} kommer att tas bort. Skriv OK i rutan.`
+    );
+    if (step2 !== 'OK') return;
+    const ids = Array.from(selectedObjectIds);
+    if (expandedObjectId && ids.includes(expandedObjectId)) setExpandedObjectId(null);
+    deleteInsuranceObjects(selectedRootId, selectedSubsidiaryId, ids);
+    setTree(getTree());
+    setSelectedObjectIds(new Set());
+    showToast(`${count === 1 ? 'Försäkringsobjektet' : `${count} försäkringsobjekt`} borttaget`);
   };
 
   const handleAddObject = () => {
@@ -624,6 +573,8 @@ const Workspace = () => {
           <SectionHeader
             title="Dotterbolag"
             count={subCount}
+            isOpen={subOpen}
+            onToggleOpen={() => setSubOpen((v) => !v)}
             panel={subPanel}
             onPanelToggle={setSubPanel}
             showDelete={true}
@@ -632,10 +583,8 @@ const Workspace = () => {
             panelContent={
               <SubInlinePanel
                 panel={subPanel}
-                subSearch={subSearch}
-                setSubSearch={setSubSearch}
-                subAddValue={subAddValue}
-                setSubAddValue={setSubAddValue}
+                subSearch={subSearch} setSubSearch={setSubSearch}
+                subAddValue={subAddValue} setSubAddValue={setSubAddValue}
                 onAddSubsidiary={handleAddSubsidiary}
                 onBulkDelete={handleBulkDelete}
                 selectedCount={selectedSubsidiaryIds.size}
@@ -644,63 +593,64 @@ const Workspace = () => {
             }
           />
 
-          <div
-            className="px-10 py-1.5 grid"
-            style={{ gridTemplateColumns: 'auto 1fr 140px', gap: '0 8px', borderBottom: '1px solid var(--pw-border)' }}
-          >
-            <div />
-            <span className="text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>Namn</span>
-            <span className="text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>Färdigställt</span>
-          </div>
+          {subOpen && (
+            <>
+              <div
+                className="px-10 py-1.5 grid"
+                style={{ gridTemplateColumns: 'auto 1fr 140px', gap: '0 8px', borderBottom: '1px solid var(--pw-border)' }}
+              >
+                <div />
+                <span className="text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>Namn</span>
+                <span className="text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>Färdigställt</span>
+              </div>
 
-          {filteredSubsidiaries.length === 0 ? (
-            <p className="text-xs px-10 py-3" style={{ color: 'var(--pw-text-tertiary)' }}>
-              {subSearch ? 'Inga träffar' : 'Inga dotterbolag'}
-            </p>
-          ) : (
-            filteredSubsidiaries.map((sub) => {
-              const isSelected = selectedSubsidiaryId === sub.id;
-              const isChecked = selectedSubsidiaryIds.has(sub.id);
-              const prog = getSubsidiaryProgress(selectedRootId, sub.id, tree);
-              return (
-                <div
-                  key={sub.id}
-                  className="grid items-center px-10 py-2 transition-colors cursor-pointer"
-                  style={{
-                    gridTemplateColumns: 'auto 1fr 140px',
-                    gap: '0 8px',
-                    backgroundColor: isSelected ? 'var(--pw-bg-tertiary)' : 'transparent',
-                    borderLeft: isSelected ? '2px solid var(--pw-accent-red)' : '2px solid transparent',
-                  }}
-                  onClick={() => handleSelectSubsidiary(sub.id)}
-                  onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; }}
-                  onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent'; }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => {}}
-                    onClick={(e) => { e.stopPropagation(); handleToggleSubsidiarySelect(sub.id); }}
-                    style={{ cursor: 'pointer', accentColor: 'var(--pw-accent-red)', flexShrink: 0, marginRight: '6px' }}
-                  />
-                  <span className="flex items-center min-w-0">
-                    <span
-                      className="text-sm truncate"
+              {filteredSubsidiaries.length === 0 ? (
+                <p className="text-xs px-10 py-3" style={{ color: 'var(--pw-text-tertiary)' }}>
+                  {subSearch ? 'Inga träffar' : 'Inga dotterbolag'}
+                </p>
+              ) : (
+                filteredSubsidiaries.map((sub) => {
+                  const isSelected = selectedSubsidiaryId === sub.id;
+                  const isChecked = selectedSubsidiaryIds.has(sub.id);
+                  const prog = getSubsidiaryProgress(selectedRootId, sub.id, tree);
+                  return (
+                    <div
+                      key={sub.id}
+                      className="grid items-center px-10 py-2 transition-colors cursor-pointer"
                       style={{
-                        color: isSelected ? 'var(--pw-text-primary)' : 'var(--pw-text-secondary)',
-                        fontWeight: isSelected ? 500 : 400,
+                        gridTemplateColumns: 'auto 1fr 140px',
+                        gap: '0 8px',
+                        backgroundColor: isSelected ? 'var(--pw-bg-tertiary)' : 'transparent',
+                        borderLeft: isSelected ? '2px solid var(--pw-accent-red)' : '2px solid transparent',
                       }}
+                      onClick={() => handleSelectSubsidiary(sub.id)}
+                      onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; }}
+                      onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent'; }}
                     >
-                      {sub.name}
-                    </span>
-                    {sub.orgnr && (
-                      <OrgNrChip orgnr={sub.orgnr} onCopied={() => showToast('Orgnr kopierat')} />
-                    )}
-                  </span>
-                  <ProgressPill pct={prog.pct} showPct={false} />
-                </div>
-              );
-            })
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {}}
+                        onClick={(e) => { e.stopPropagation(); handleToggleSubsidiarySelect(sub.id); }}
+                        style={{ cursor: 'pointer', accentColor: 'var(--pw-accent-red)', flexShrink: 0, marginRight: '6px' }}
+                      />
+                      <span className="flex items-center min-w-0">
+                        <span
+                          className="text-sm truncate"
+                          style={{ color: isSelected ? 'var(--pw-text-primary)' : 'var(--pw-text-secondary)', fontWeight: isSelected ? 500 : 400 }}
+                        >
+                          {sub.name}
+                        </span>
+                        {sub.orgnr && (
+                          <OrgNrChip orgnr={sub.orgnr} onCopied={() => showToast('Orgnr kopierat')} />
+                        )}
+                      </span>
+                      <ProgressPill pct={prog.pct} showPct={false} />
+                    </div>
+                  );
+                })
+              )}
+            </>
           )}
         </div>
 
@@ -708,30 +658,38 @@ const Workspace = () => {
           <SectionHeader
             title="Försäkringsobjekt"
             count={objCount}
+            isOpen={objOpen}
+            onToggleOpen={() => setObjOpen((v) => !v)}
             panel={objPanel}
             onPanelToggle={setObjPanel}
+            showDelete={true}
+            deleteDisabled={selectedObjectIds.size === 0}
             toolbarRef={objToolbarRef}
             panelContent={
               <ObjInlinePanel
                 panel={objPanel}
-                objSearch={objSearch}
-                setObjSearch={setObjSearch}
-                objTypeFilter={objTypeFilter}
-                setObjTypeFilter={setObjTypeFilter}
-                objAddForm={objAddForm}
-                setObjAddForm={setObjAddForm}
+                objSearch={objSearch} setObjSearch={setObjSearch}
+                objTypeFilter={objTypeFilter} setObjTypeFilter={setObjTypeFilter}
+                objAddForm={objAddForm} setObjAddForm={setObjAddForm}
                 onAddObject={handleAddObject}
+                onBulkDeleteObjects={handleBulkDeleteObjects}
+                selectedCount={selectedObjectIds.size}
                 onClose={() => setObjPanel(null)}
               />
             }
           />
-          <ObjectListView
-            objects={filteredObjects}
-            expandedObjectId={expandedObjectId}
-            onToggleObject={handleToggleObject}
-            onUpdateObject={handleUpdateObject}
-            onVerifyField={handleVerifyField}
-          />
+          {objOpen && (
+            <ObjectListView
+              objects={filteredObjects}
+              expandedObjectId={expandedObjectId}
+              selectedObjectIds={selectedObjectIds}
+              onToggleObject={handleToggleObject}
+              onToggleObjectSelect={handleToggleObjectSelect}
+              onUpdateObject={handleUpdateObject}
+              onVerifyField={handleVerifyField}
+              showCheckboxes={true}
+            />
+          )}
         </div>
       </div>
     );
@@ -759,26 +717,15 @@ const Workspace = () => {
         </div>
 
         <div>
-          <SectionHeader
-            title="Försäkringsobjekt"
-            count={objCount}
-            panel={objPanel}
-            onPanelToggle={setObjPanel}
-            toolbarRef={objToolbarRef}
-            panelContent={
-              <ObjInlinePanel
-                panel={objPanel}
-                objSearch={objSearch}
-                setObjSearch={setObjSearch}
-                objTypeFilter={objTypeFilter}
-                setObjTypeFilter={setObjTypeFilter}
-                objAddForm={objAddForm}
-                setObjAddForm={setObjAddForm}
-                onAddObject={handleAddObject}
-                onClose={() => setObjPanel(null)}
-              />
-            }
-          />
+          <div
+            className="flex items-center px-10 py-2"
+            style={{ borderBottom: '1px solid var(--pw-border)', minHeight: '40px' }}
+          >
+            <span style={{ fontWeight: 500, color: 'var(--pw-text-primary)', fontSize: '14px', flexShrink: 0 }}>
+              Försäkringsobjekt
+            </span>
+            <span className="text-xs ml-2" style={{ color: 'var(--pw-text-tertiary)' }}>{objCount}</span>
+          </div>
           <ObjectListView
             objects={filteredObjects}
             expandedObjectId={expandedObjectId}

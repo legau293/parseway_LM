@@ -239,17 +239,23 @@ function ObjectDropdown({ object, onVerifyField, onUpdate, onCollapse }: Dropdow
 interface ObjectListViewProps {
   objects: InsuranceObject[];
   expandedObjectId: string | null;
+  selectedObjectIds?: Set<string>;
   onToggleObject: (id: string) => void;
+  onToggleObjectSelect?: (id: string) => void;
   onUpdateObject: (id: string, patch: Partial<Pick<InsuranceObject, 'name' | 'objectType' | 'description'>>) => void;
   onVerifyField: (objId: string) => void;
+  showCheckboxes?: boolean;
 }
 
 const ObjectListView = ({
   objects,
   expandedObjectId,
+  selectedObjectIds,
   onToggleObject,
+  onToggleObjectSelect,
   onUpdateObject,
   onVerifyField,
+  showCheckboxes = false,
 }: ObjectListViewProps) => {
   if (objects.length === 0) {
     return (
@@ -261,24 +267,30 @@ const ObjectListView = ({
 
   return (
     <div>
-      <ObjectListHeader />
-      {objects.map((obj) => (
-        <React.Fragment key={obj.id}>
-          <ObjectRow
-            object={obj}
-            isExpanded={expandedObjectId === obj.id}
-            onClick={() => onToggleObject(obj.id)}
-          />
-          {expandedObjectId === obj.id && (
-            <ObjectDropdown
+      <ObjectListHeader showCheckbox={showCheckboxes} />
+      {objects.map((obj) => {
+        const isChecked = selectedObjectIds?.has(obj.id) ?? false;
+        return (
+          <React.Fragment key={obj.id}>
+            <ObjectRow
               object={obj}
-              onVerifyField={onVerifyField}
-              onUpdate={(patch) => onUpdateObject(obj.id, patch)}
-              onCollapse={() => onToggleObject(obj.id)}
+              isExpanded={expandedObjectId === obj.id}
+              isChecked={isChecked}
+              showCheckbox={showCheckboxes}
+              onClick={() => onToggleObject(obj.id)}
+              onCheckboxClick={onToggleObjectSelect ? (e) => { e.stopPropagation(); onToggleObjectSelect(obj.id); } : undefined}
             />
-          )}
-        </React.Fragment>
-      ))}
+            {expandedObjectId === obj.id && (
+              <ObjectDropdown
+                object={obj}
+                onVerifyField={onVerifyField}
+                onUpdate={(patch) => onUpdateObject(obj.id, patch)}
+                onCollapse={() => onToggleObject(obj.id)}
+              />
+            )}
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 };
