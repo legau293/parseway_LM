@@ -11,10 +11,7 @@ interface ObjectListViewProps {
   onToggleObject: (id: string) => void;
   nodeId: string;
   onVerifyField: (nodeId: string, objectId: string) => void;
-  externalSearch?: string;
 }
-
-const OBJECT_TYPES = ['Alla', 'Fastighet', 'Bil', 'Maskin'];
 
 const ThreeColumnDropdown = ({
   object,
@@ -99,11 +96,9 @@ const ObjectListView = ({
   onToggleObject,
   nodeId,
   onVerifyField,
-  externalSearch = '',
 }: ObjectListViewProps) => {
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
-  const [typeFilter, setTypeFilter] = useState('Alla');
 
   const handleSort = (key: SortKey) => {
     if (key === sortKey) {
@@ -114,21 +109,8 @@ const ObjectListView = ({
     }
   };
 
-  const filtered = useMemo(() => {
-    const q = externalSearch.toLowerCase();
-    return objects.filter((o) => {
-      const matchSearch =
-        !q ||
-        o.name.toLowerCase().includes(q) ||
-        o.description.toLowerCase().includes(q) ||
-        o.objectType.toLowerCase().includes(q);
-      const matchType = typeFilter === 'Alla' || o.objectType === typeFilter;
-      return matchSearch && matchType;
-    });
-  }, [objects, externalSearch, typeFilter]);
-
   const sorted = useMemo(() => {
-    return [...filtered].sort((a, b) => {
+    return [...objects].sort((a, b) => {
       let av: string | number = a[sortKey];
       let bv: string | number = b[sortKey];
       if (typeof av === 'string') av = av.toLowerCase();
@@ -137,43 +119,19 @@ const ObjectListView = ({
       if (av > bv) return sortDir === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [filtered, sortKey, sortDir]);
+  }, [objects, sortKey, sortDir]);
+
+  if (sorted.length === 0) {
+    return (
+      <p className="text-xs px-4 py-4" style={{ color: 'var(--pw-text-tertiary)' }}>
+        Inga objekt matchar filtret.
+      </p>
+    );
+  }
 
   return (
     <div>
-      <div
-        className="flex items-center gap-3 px-4 py-2"
-        style={{ borderBottom: '1px solid var(--pw-border)' }}
-      >
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          className="text-xs rounded px-2 py-1 outline-none cursor-pointer transition-colors"
-          style={{
-            border: '1px solid var(--pw-border)',
-            backgroundColor: 'var(--pw-bg-primary)',
-            color: 'var(--pw-text-secondary)',
-          }}
-          onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--pw-accent-red)')}
-          onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--pw-border)')}
-        >
-          {OBJECT_TYPES.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
-
-        {typeFilter !== 'Alla' && (
-          <button
-            onClick={() => setTypeFilter('Alla')}
-            className="text-xs transition-colors"
-            style={{ color: 'var(--pw-text-tertiary)' }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--pw-text-secondary)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--pw-text-tertiary)')}
-          >
-            Rensa
-          </button>
-        )}
-
+      <div className="flex items-center gap-3 px-4 py-1.5" style={{ borderBottom: '1px solid var(--pw-border)' }}>
         <span className="ml-auto text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>
           {sorted.length} objekt
         </span>
@@ -181,28 +139,22 @@ const ObjectListView = ({
 
       <ObjectListHeader sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
 
-      {sorted.length === 0 ? (
-        <p className="text-xs px-4 py-4" style={{ color: 'var(--pw-text-tertiary)' }}>
-          Inga objekt matchar filtret.
-        </p>
-      ) : (
-        sorted.map((obj) => (
-          <React.Fragment key={obj.id}>
-            <ObjectRow
+      {sorted.map((obj) => (
+        <React.Fragment key={obj.id}>
+          <ObjectRow
+            object={obj}
+            isExpanded={expandedObjectId === obj.id}
+            onClick={() => onToggleObject(obj.id)}
+          />
+          {expandedObjectId === obj.id && (
+            <ThreeColumnDropdown
               object={obj}
-              isExpanded={expandedObjectId === obj.id}
-              onClick={() => onToggleObject(obj.id)}
+              nodeId={nodeId}
+              onVerifyField={onVerifyField}
             />
-            {expandedObjectId === obj.id && (
-              <ThreeColumnDropdown
-                object={obj}
-                nodeId={nodeId}
-                onVerifyField={onVerifyField}
-              />
-            )}
-          </React.Fragment>
-        ))
-      )}
+          )}
+        </React.Fragment>
+      ))}
     </div>
   );
 };
