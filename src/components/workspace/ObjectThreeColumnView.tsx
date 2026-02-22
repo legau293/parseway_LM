@@ -207,7 +207,7 @@ function LeftColumn({
       <div style={{ padding: '12px 16px 8px', borderBottom: '1px solid var(--pw-border)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
           <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--pw-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            Struktur
+            Parametrar
           </span>
           {!allDone && (
             <span style={{ fontSize: '11px', color: 'var(--pw-text-tertiary)' }}>
@@ -477,7 +477,7 @@ const ObjectThreeColumnView = ({ object, onUpdateParameter }: Props) => {
         borderBottom: '1px solid var(--pw-border)',
         backgroundColor: 'var(--pw-bg-primary)',
         display: 'grid',
-        gridTemplateColumns: '280px 1fr 1fr',
+        gridTemplateColumns: '1.5fr 0.8fr 1.1fr',
         height: '380px',
       }}
     >
