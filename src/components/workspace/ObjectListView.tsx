@@ -275,7 +275,7 @@ const ObjectListView = ({
   }
 
   return (
-    <div>
+    <div style={{ position: 'relative', zIndex: 0 }}>
       <ObjectListHeader showCheckbox={showCheckboxes} sortColumn={sortColumn} sortDirection={sortDirection} onSort={onSort} />
       {objects.map((obj) => {
         const isChecked = selectedObjectIds?.has(obj.id) ?? false;
@@ -290,10 +290,21 @@ const ObjectListView = ({
               onCheckboxClick={onToggleObjectSelect ? (e) => { e.stopPropagation(); onToggleObjectSelect(obj.id); } : undefined}
             />
             {expandedObjectId === obj.id && (
-              <ObjectThreeColumnView
-                object={obj}
-                onUpdateParameter={(paramId, patch) => onUpdateParameter?.(obj.id, paramId, patch)}
-              />
+              <div
+                style={{
+                  position: 'relative',
+                  zIndex: 1,
+                  width: '100%',
+                  backgroundColor: 'var(--pw-bg-secondary)',
+                  isolation: 'isolate',
+                  overflow: 'hidden',
+                }}
+              >
+                <ObjectThreeColumnView
+                  object={obj}
+                  onUpdateParameter={(paramId, patch) => onUpdateParameter?.(obj.id, paramId, patch)}
+                />
+              </div>
             )}
           </React.Fragment>
         );
