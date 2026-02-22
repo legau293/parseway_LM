@@ -6,6 +6,8 @@ import WorkspaceSidebar from '@/components/workspace/WorkspaceSidebar';
 import WorkspaceHeader from '@/components/workspace/WorkspaceHeader';
 import ObjectListView from '@/components/workspace/ObjectListView';
 import ProgressPill from '@/components/workspace/ProgressPill';
+import CopyChip from '@/components/workspace/CopyChip';
+import WorkspaceToast from '@/components/workspace/WorkspaceToast';
 import {
   OrgTree,
   ROOT_COMPANY_IDS,
@@ -428,6 +430,17 @@ const Workspace = () => {
   const [objSort, setObjSort] = useState('az');
   const [objTypeFilter, setObjTypeFilter] = useState('Alla');
 
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastVisible, setToastVisible] = useState(false);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastMessage(msg);
+    setToastVisible(true);
+    toastTimerRef.current = setTimeout(() => setToastVisible(false), 1500);
+  }, []);
+
   const subHeaderRef = useRef<HTMLDivElement>(null);
   const objHeaderRef = useRef<HTMLDivElement>(null);
   const subSearchInputRef = useRef<HTMLInputElement>(null);
@@ -618,6 +631,8 @@ const Workspace = () => {
   );
 
   return (
+    <>
+    <WorkspaceToast message={toastMessage} isVisible={toastVisible} />
     <WorkspaceShell
       sidebar={
         <WorkspaceSidebar
@@ -656,7 +671,7 @@ const Workspace = () => {
             className="px-10 pt-8 pb-4"
             style={{ borderBottom: '1px solid var(--pw-border)' }}
           >
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1">
               <h1
                 className="truncate"
                 style={{ color: 'var(--pw-text-primary)', fontSize: '26px', fontWeight: 500, lineHeight: 1.2 }}
@@ -667,6 +682,15 @@ const Workspace = () => {
                 <ProgressPill pct={rootProgress.pct} showPct={true} barWidth={100} />
               )}
             </div>
+            {rootNode?.orgnr && (
+              <div className="mb-2">
+                <CopyChip
+                  text={rootNode.orgnr}
+                  label="Orgnr"
+                  onCopied={() => showToast('Orgnr kopierat')}
+                />
+              </div>
+            )}
             <WorkspaceHeader
               path={path.map((n) => ({ id: n.id, name: n.name }))}
               onSelectNode={handleSelectNode}
@@ -697,10 +721,10 @@ const Workspace = () => {
                     const isSelected = selectedNodeId === node.id;
                     const progress = getNodeProgress(node.id, tree);
                     return (
-                      <button
+                      <div
                         key={node.id}
                         onClick={() => handleSelectNode(node.id)}
-                        className="w-full text-left flex items-center gap-3 px-10 py-2 text-sm transition-colors"
+                        className="w-full flex items-center gap-3 px-10 py-2 text-sm transition-colors cursor-pointer"
                         style={{
                           backgroundColor: isSelected ? 'var(--pw-bg-tertiary)' : 'transparent',
                           color: 'var(--pw-text-primary)',
@@ -711,8 +735,15 @@ const Workspace = () => {
                         onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent'; }}
                       >
                         <span className="flex-1">{node.name}</span>
+                        {node.orgnr && (
+                          <CopyChip
+                            text={node.orgnr}
+                            label="Orgnr"
+                            onCopied={() => showToast('Orgnr kopierat')}
+                          />
+                        )}
                         <ProgressPill pct={progress.pct} showPct={false} />
-                      </button>
+                      </div>
                     );
                   })
                 )}
@@ -746,6 +777,7 @@ const Workspace = () => {
         </div>
       )}
     </WorkspaceShell>
+    </>
   );
 };
 

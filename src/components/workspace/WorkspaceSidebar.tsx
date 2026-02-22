@@ -1,9 +1,10 @@
 import React, { useRef, useEffect } from 'react';
-import { Settings, HelpCircle, Search, Building2, LogOut, Star, Plus, X } from 'lucide-react';
+import { Search, Building2, Star, Plus, Settings, HelpCircle, LogOut, ChevronDown } from 'lucide-react';
 import Logo from '@/components/ui/Logo';
 import ProgressPill from './ProgressPill';
 import { getNodeProgress } from '@/utils/progress';
 import { OrgTree } from '@/data/mockOrgTree';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface WorkspaceSidebarProps {
   companies: string[];
@@ -18,6 +19,17 @@ interface WorkspaceSidebarProps {
   onLogoClick: () => void;
   onAddCompany: (name: string) => void;
   tree: OrgTree;
+}
+
+function useClickOutside(ref: React.RefObject<HTMLElement>, handler: () => void) {
+  useEffect(() => {
+    const listener = (e: MouseEvent) => {
+      if (!ref.current || ref.current.contains(e.target as Node)) return;
+      handler();
+    };
+    document.addEventListener('mousedown', listener);
+    return () => document.removeEventListener('mousedown', listener);
+  }, [ref, handler]);
 }
 
 const CompanyRow = ({
@@ -40,7 +52,7 @@ const CompanyRow = ({
   const [hovered, setHovered] = React.useState(false);
   return (
     <div
-      className="flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors"
+      className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors"
       style={{
         backgroundColor: isSelected || hovered ? 'var(--pw-bg-tertiary)' : 'transparent',
         color: isSelected ? 'var(--pw-text-primary)' : 'var(--pw-text-secondary)',
@@ -69,6 +81,108 @@ const CompanyRow = ({
   );
 };
 
+const UserMenu = ({
+  displayName,
+  onLogout,
+}: {
+  displayName: string;
+  onLogout: () => void;
+}) => {
+  const [open, setOpen] = React.useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useClickOutside(menuRef, () => setOpen(false));
+
+  const menuItemStyle: React.CSSProperties = {
+    width: '100%',
+    textAlign: 'left',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '7px 10px',
+    fontSize: '13px',
+    color: 'var(--pw-text-secondary)',
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    borderRadius: '4px',
+    transition: 'background 0.1s',
+  };
+
+  return (
+    <div ref={menuRef} style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors"
+        style={{
+          color: 'var(--pw-text-secondary)',
+          backgroundColor: open ? 'var(--pw-bg-tertiary)' : 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; }}
+        onMouseLeave={(e) => { if (!open) e.currentTarget.style.backgroundColor = 'transparent'; }}
+      >
+        <span className="flex-1 truncate text-left text-sm" style={{ color: 'var(--pw-text-primary)', fontWeight: 500 }}>
+          {displayName}
+        </span>
+        <ChevronDown
+          size={13}
+          style={{
+            flexShrink: 0,
+            color: 'var(--pw-text-tertiary)',
+            transition: 'transform 0.15s',
+            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+          }}
+        />
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 4px)',
+            left: '8px',
+            right: '8px',
+            zIndex: 50,
+            backgroundColor: 'var(--pw-bg-secondary)',
+            border: '1px solid var(--pw-border)',
+            borderRadius: '6px',
+            padding: '4px',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+          }}
+        >
+          <button
+            style={menuItemStyle}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            <Settings size={13} style={{ opacity: 0.6, flexShrink: 0 }} />
+            Inställningar
+          </button>
+          <button
+            style={menuItemStyle}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            <HelpCircle size={13} style={{ opacity: 0.6, flexShrink: 0 }} />
+            Hjälp
+          </button>
+          <div style={{ borderTop: '1px solid var(--pw-border)', margin: '4px 0' }} />
+          <button
+            onClick={() => { setOpen(false); onLogout(); }}
+            style={menuItemStyle}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            <LogOut size={13} style={{ opacity: 0.6, flexShrink: 0 }} />
+            Logga ut
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const WorkspaceSidebar = ({
   companies,
   companyNames,
@@ -86,6 +200,15 @@ const WorkspaceSidebar = ({
   const [isAddingCompany, setIsAddingCompany] = React.useState(false);
   const [newCompanyName, setNewCompanyName] = React.useState('');
   const addInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
+
+  const displayName = (() => {
+    if (user?.user_metadata?.full_name) return user.user_metadata.full_name;
+    if (user?.user_metadata?.first_name && user?.user_metadata?.last_name)
+      return `${user.user_metadata.first_name} ${user.user_metadata.last_name}`;
+    if (user?.email) return user.email.split('@')[0];
+    return 'Dennis Johansson';
+  })();
 
   useEffect(() => {
     if (isAddingCompany) addInputRef.current?.focus();
@@ -141,15 +264,85 @@ const WorkspaceSidebar = ({
         borderColor: 'var(--pw-border)',
       }}
     >
-      <div className="px-5 pt-5 pb-4">
-        <div className="mb-6">
-          <button
-            onClick={onLogoClick}
-            className="block"
-            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-          >
-            <Logo size="sm" showText={true} />
-          </button>
+      <div className="px-5 pt-5 pb-3">
+        <button
+          onClick={onLogoClick}
+          className="block mb-4"
+          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+        >
+          <Logo size="sm" showText={true} />
+        </button>
+
+        <UserMenu displayName={displayName} onLogout={onLogout} />
+
+        <div className="mt-2">
+          {isAddingCompany ? (
+            <div
+              className="rounded-md px-3 py-2"
+              style={{ backgroundColor: 'var(--pw-bg-tertiary)', border: '1px solid var(--pw-border)' }}
+            >
+              <input
+                ref={addInputRef}
+                value={newCompanyName}
+                onChange={(e) => setNewCompanyName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleConfirmAdd();
+                  if (e.key === 'Escape') handleCancelAdd();
+                }}
+                placeholder="Moderbolagsnamn…"
+                className="bg-transparent outline-none w-full text-sm mb-2"
+                style={{ color: 'var(--pw-text-primary)', caretColor: 'var(--pw-primary)', display: 'block' }}
+                onFocus={(e) => (e.currentTarget.parentElement!.style.borderColor = 'var(--pw-accent-red)')}
+                onBlur={(e) => (e.currentTarget.parentElement!.style.borderColor = 'var(--pw-border)')}
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleConfirmAdd}
+                  disabled={!newCompanyName.trim()}
+                  className="text-xs px-2 py-0.5 rounded"
+                  style={{
+                    border: `1px solid ${newCompanyName.trim() ? 'var(--pw-accent-red)' : 'var(--pw-border)'}`,
+                    color: newCompanyName.trim() ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)',
+                    opacity: newCompanyName.trim() ? 1 : 0.5,
+                    cursor: newCompanyName.trim() ? 'pointer' : 'default',
+                    backgroundColor: 'transparent',
+                  }}
+                >
+                  Skapa
+                </button>
+                <button
+                  onClick={handleCancelAdd}
+                  className="text-xs"
+                  style={{ color: 'var(--pw-text-tertiary)' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--pw-text-secondary)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--pw-text-tertiary)')}
+                >
+                  Avbryt
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsAddingCompany(true)}
+              className="w-full flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors"
+              style={{
+                color: 'var(--pw-text-tertiary)',
+                backgroundColor: 'transparent',
+                border: 'none',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)';
+                e.currentTarget.style.color = 'var(--pw-text-secondary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'var(--pw-text-tertiary)';
+              }}
+            >
+              <Plus size={12} style={{ flexShrink: 0 }} />
+              <span>Lägg till moderbolag</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -171,7 +364,7 @@ const WorkspaceSidebar = ({
       </div>
 
       <nav className="flex-1 px-2 overflow-y-auto">
-        {filtered.length === 0 && !isAddingCompany ? (
+        {filtered.length === 0 ? (
           <p className="px-3 py-2 text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>
             Inga träffar
           </p>
@@ -198,107 +391,6 @@ const WorkspaceSidebar = ({
           </>
         )}
       </nav>
-
-      <div className="px-3 pb-2">
-        {isAddingCompany ? (
-          <div
-            className="rounded-md px-3 py-2"
-            style={{ backgroundColor: 'var(--pw-bg-tertiary)', border: '1px solid var(--pw-border)' }}
-          >
-            <input
-              ref={addInputRef}
-              value={newCompanyName}
-              onChange={(e) => setNewCompanyName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleConfirmAdd();
-                if (e.key === 'Escape') handleCancelAdd();
-              }}
-              placeholder="Moderbolagsnamn…"
-              className="bg-transparent outline-none w-full text-sm mb-2"
-              style={{ color: 'var(--pw-text-primary)', caretColor: 'var(--pw-primary)', display: 'block' }}
-              onFocus={(e) => (e.currentTarget.parentElement!.style.borderColor = 'var(--pw-accent-red)')}
-              onBlur={(e) => (e.currentTarget.parentElement!.style.borderColor = 'var(--pw-border)')}
-            />
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleConfirmAdd}
-                disabled={!newCompanyName.trim()}
-                className="text-xs px-2 py-0.5 rounded transition-colors"
-                style={{
-                  border: `1px solid ${newCompanyName.trim() ? 'var(--pw-accent-red)' : 'var(--pw-border)'}`,
-                  color: newCompanyName.trim() ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)',
-                  opacity: newCompanyName.trim() ? 1 : 0.5,
-                  cursor: newCompanyName.trim() ? 'pointer' : 'default',
-                  backgroundColor: 'transparent',
-                }}
-              >
-                Skapa
-              </button>
-              <button
-                onClick={handleCancelAdd}
-                className="text-xs"
-                style={{ color: 'var(--pw-text-tertiary)' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--pw-text-secondary)')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--pw-text-tertiary)')}
-              >
-                Avbryt
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setIsAddingCompany(true)}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors"
-            style={{
-              color: 'var(--pw-text-secondary)',
-              border: '1px solid var(--pw-border)',
-              backgroundColor: 'transparent',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)';
-              e.currentTarget.style.borderColor = 'var(--pw-text-tertiary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.borderColor = 'var(--pw-border)';
-            }}
-          >
-            <Plus size={13} style={{ flexShrink: 0, opacity: 0.6 }} />
-            <span>Lägg till moderbolag</span>
-          </button>
-        )}
-      </div>
-
-      <div className="px-2 py-3 border-t" style={{ borderColor: 'var(--pw-border)' }}>
-        <button
-          className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors"
-          style={{ color: 'var(--pw-text-secondary)', fontWeight: 400 }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)')}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-        >
-          <Settings size={14} style={{ flexShrink: 0, opacity: 0.6 }} />
-          Inställningar
-        </button>
-        <button
-          className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors"
-          style={{ color: 'var(--pw-text-secondary)', fontWeight: 400 }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)')}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-        >
-          <HelpCircle size={14} style={{ flexShrink: 0, opacity: 0.6 }} />
-          Hjälp
-        </button>
-        <button
-          onClick={onLogout}
-          className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors"
-          style={{ color: 'var(--pw-text-secondary)', fontWeight: 400 }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)')}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-        >
-          <LogOut size={14} style={{ flexShrink: 0, opacity: 0.6 }} />
-          Logga ut
-        </button>
-      </div>
     </aside>
   );
 };
