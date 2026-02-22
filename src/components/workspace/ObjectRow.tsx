@@ -1,5 +1,5 @@
 import React from 'react';
-import { InsuranceObject } from '@/data/mockObjects';
+import { InsuranceObject } from '@/data/mockWorkspace';
 
 interface ObjectRowProps {
   object: InsuranceObject;

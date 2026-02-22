@@ -3,8 +3,9 @@ import { useLogout } from '@/services/authService';
 import WorkspaceShell from '@/components/workspace/WorkspaceShell';
 import WorkspaceSidebar from '@/components/workspace/WorkspaceSidebar';
 import WorkspaceHeader from '@/components/workspace/WorkspaceHeader';
+import SubsidiarySelect from '@/components/workspace/SubsidiarySelect';
 import ObjectListView from '@/components/workspace/ObjectListView';
-import { getMockObjects } from '@/data/mockObjects';
+import { getMockSubsidiaries, getMockObjects } from '@/data/mockWorkspace';
 
 const COMPANIES = [
   'Volvo AB',
@@ -16,26 +17,44 @@ const COMPANIES = [
 ];
 
 const Workspace = () => {
-  const [selected, setSelected] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
+  const [selectedSubsidiaryId, setSelectedSubsidiaryId] = useState<string | null>(null);
   const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
   const { logout } = useLogout();
 
   const handleSelectCompany = (company: string) => {
-    setSelected(company);
+    const subs = getMockSubsidiaries(company);
+    setSelectedCompany(company);
+    setSelectedSubsidiaryId(subs.length > 0 ? subs[0].id : null);
     setSelectedObjectId(null);
   };
 
-  const selectedObject = selected
-    ? getMockObjects(selected).find((o) => o.id === selectedObjectId) ?? null
-    : null;
+  const handleSelectSubsidiary = (id: string) => {
+    setSelectedSubsidiaryId(id);
+    setSelectedObjectId(null);
+  };
+
+  const handleGoToCompany = () => {
+    setSelectedObjectId(null);
+  };
+
+  const handleGoToSubsidiary = () => {
+    setSelectedObjectId(null);
+  };
+
+  const subsidiaries = selectedCompany ? getMockSubsidiaries(selectedCompany) : [];
+  const objects = selectedSubsidiaryId ? getMockObjects(selectedSubsidiaryId) : [];
+
+  const selectedSubsidiary = subsidiaries.find((s) => s.id === selectedSubsidiaryId) ?? null;
+  const selectedObject = objects.find((o) => o.id === selectedObjectId) ?? null;
 
   return (
     <WorkspaceShell
       sidebar={
         <WorkspaceSidebar
           companies={COMPANIES}
-          selectedCompany={selected}
+          selectedCompany={selectedCompany}
           onSelectCompany={handleSelectCompany}
           searchValue={search}
           onSearchChange={setSearch}
@@ -44,9 +63,7 @@ const Workspace = () => {
       }
     >
       <div className="px-10 py-8 max-w-3xl">
-        <WorkspaceHeader selectedCompanyName={selected} />
-
-        {!selected ? (
+        {!selectedCompany ? (
           <div
             className="rounded-lg p-6"
             style={{
@@ -67,44 +84,53 @@ const Workspace = () => {
               Här kommer 3-kolumnsgränssnittet för valt objekt.
             </p>
           </div>
-        ) : selectedObject ? (
-          <div>
-            <button
-              onClick={() => setSelectedObjectId(null)}
-              className="text-sm mb-6"
-              style={{ color: 'var(--pw-text-tertiary)', fontWeight: 400 }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--pw-text-secondary)')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--pw-text-tertiary)')}
-            >
-              ← Tillbaka till listan
-            </button>
-            <p
-              className="text-base mb-2"
-              style={{ color: 'var(--pw-text-primary)', fontWeight: 500 }}
-            >
-              {selectedObject.name}
-            </p>
-            <p
-              className="text-sm"
-              style={{ color: 'var(--pw-text-secondary)', fontWeight: 400 }}
-            >
-              Här kommer objektvyn med 3-kolumnsgränssnittet.
-            </p>
-          </div>
         ) : (
-          <div>
-            <p
-              className="text-sm mb-3 px-1"
-              style={{ color: 'var(--pw-text-secondary)', fontWeight: 400 }}
-            >
-              Försäkringsobjekt
-            </p>
-            <ObjectListView
-              objects={getMockObjects(selected)}
-              selectedObjectId={selectedObjectId}
-              onSelectObject={setSelectedObjectId}
+          <>
+            <WorkspaceHeader
+              companyName={selectedCompany}
+              subsidiaryName={selectedSubsidiary?.name ?? null}
+              objectName={selectedObject?.name ?? null}
+              onGoToCompany={handleGoToCompany}
+              onGoToSubsidiary={handleGoToSubsidiary}
             />
-          </div>
+
+            <SubsidiarySelect
+              subsidiaries={subsidiaries}
+              selectedSubsidiaryId={selectedSubsidiaryId ?? ''}
+              onChange={handleSelectSubsidiary}
+            />
+
+            {selectedObject ? (
+              <div>
+                <p
+                  className="text-base mb-2"
+                  style={{ color: 'var(--pw-text-primary)', fontWeight: 500 }}
+                >
+                  {selectedObject.name}
+                </p>
+                <p
+                  className="text-sm"
+                  style={{ color: 'var(--pw-text-secondary)', fontWeight: 400 }}
+                >
+                  Här kommer objektvyn med 3-kolumnsgränssnittet.
+                </p>
+              </div>
+            ) : (
+              <div>
+                <p
+                  className="text-sm mb-3 px-1"
+                  style={{ color: 'var(--pw-text-secondary)', fontWeight: 400 }}
+                >
+                  Försäkringsobjekt
+                </p>
+                <ObjectListView
+                  objects={objects}
+                  selectedObjectId={selectedObjectId}
+                  onSelectObject={setSelectedObjectId}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
     </WorkspaceShell>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { InsuranceObject } from '@/data/mockObjects';
+import { InsuranceObject } from '@/data/mockWorkspace';
 import ObjectRow from './ObjectRow';
 
 interface ObjectListViewProps {

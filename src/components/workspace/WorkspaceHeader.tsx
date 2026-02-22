@@ -1,24 +1,70 @@
 import React from 'react';
 
 interface WorkspaceHeaderProps {
-  selectedCompanyName: string | null;
+  companyName: string | null;
+  subsidiaryName: string | null;
+  objectName: string | null;
+  onGoToCompany: () => void;
+  onGoToSubsidiary: () => void;
 }
 
-const WorkspaceHeader = ({ selectedCompanyName }: WorkspaceHeaderProps) => {
+const Separator = () => (
+  <span className="mx-1.5 text-sm" style={{ color: 'var(--pw-text-tertiary)' }}>
+    /
+  </span>
+);
+
+const WorkspaceHeader = ({
+  companyName,
+  subsidiaryName,
+  objectName,
+  onGoToCompany,
+  onGoToSubsidiary,
+}: WorkspaceHeaderProps) => {
+  if (!companyName) return <div className="mb-6" />;
+
   return (
-    <div className="mb-8">
-      <p
-        className="text-xs uppercase tracking-widest mb-1"
-        style={{ color: 'var(--pw-text-tertiary)', fontWeight: 400, letterSpacing: '0.1em' }}
+    <div className="mb-6 flex items-center flex-wrap">
+      <button
+        onClick={onGoToCompany}
+        className="text-sm transition-colors"
+        style={{ color: objectName || subsidiaryName ? 'var(--pw-text-secondary)' : 'var(--pw-text-primary)', fontWeight: 400 }}
+        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--pw-text-primary)')}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = objectName || subsidiaryName ? 'var(--pw-text-secondary)' : 'var(--pw-text-primary)';
+        }}
       >
-        Moderbolag
-      </p>
-      <h1
-        className="text-xl"
-        style={{ color: 'var(--pw-text-primary)', fontWeight: 500 }}
-      >
-        {selectedCompanyName ?? 'Ingen vald'}
-      </h1>
+        {companyName}
+      </button>
+
+      {subsidiaryName && (
+        <>
+          <Separator />
+          <button
+            onClick={onGoToSubsidiary}
+            className="text-sm transition-colors"
+            style={{ color: objectName ? 'var(--pw-text-secondary)' : 'var(--pw-text-primary)', fontWeight: 400 }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--pw-text-primary)')}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = objectName ? 'var(--pw-text-secondary)' : 'var(--pw-text-primary)';
+            }}
+          >
+            {subsidiaryName}
+          </button>
+        </>
+      )}
+
+      {objectName && (
+        <>
+          <Separator />
+          <span
+            className="text-sm"
+            style={{ color: 'var(--pw-text-primary)', fontWeight: 500 }}
+          >
+            {objectName}
+          </span>
+        </>
+      )}
     </div>
   );
 };
