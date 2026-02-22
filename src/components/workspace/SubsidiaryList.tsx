@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import CollapsibleSection from './CollapsibleSection';
-import { Subsidiary } from '@/data/mockWorkspace';
+import { CompanyNode } from '@/data/mockOrgTree';
 
 interface SubsidiaryListProps {
-  subsidiaries: Subsidiary[];
-  selectedSubsidiaryId: string | null;
+  nodes: CompanyNode[];
+  selectedNodeId: string | null;
   onSelect: (id: string) => void;
   isOpen: boolean;
   onToggle: () => void;
@@ -17,8 +17,8 @@ interface SubsidiaryListProps {
 }
 
 const SubsidiaryList = ({
-  subsidiaries,
-  selectedSubsidiaryId,
+  nodes,
+  selectedNodeId,
   onSelect,
   isOpen,
   onToggle,
@@ -43,7 +43,7 @@ const SubsidiaryList = ({
   return (
     <CollapsibleSection
       title="Dotterbolag"
-      count={subsidiaries.length}
+      count={nodes.length}
       isOpen={isOpen}
       onToggle={onToggle}
       actionLabel="Lägg till"
@@ -56,7 +56,7 @@ const SubsidiaryList = ({
             value={addValue}
             onChange={(e) => onChangeAddValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Namn på dotterbolag..."
+            placeholder="Namn på bolag..."
             className="flex-1 text-sm px-2 py-1 rounded outline-none transition-colors"
             style={{
               backgroundColor: 'var(--pw-bg-primary)',
@@ -87,18 +87,18 @@ const SubsidiaryList = ({
         </div>
       )}
 
-      {subsidiaries.length === 0 && !isAdding && (
+      {nodes.length === 0 && !isAdding && (
         <p className="text-sm px-4 py-2" style={{ color: 'var(--pw-text-tertiary)' }}>
           Inga dotterbolag
         </p>
       )}
 
-      {subsidiaries.map((sub) => {
-        const isSelected = selectedSubsidiaryId === sub.id;
+      {nodes.map((node) => {
+        const isSelected = selectedNodeId === node.id;
         return (
           <button
-            key={sub.id}
-            onClick={() => onSelect(sub.id)}
+            key={node.id}
+            onClick={() => onSelect(node.id)}
             className="w-full text-left px-4 py-2 text-sm transition-colors"
             style={{
               backgroundColor: isSelected ? 'var(--pw-bg-tertiary)' : 'transparent',
@@ -113,7 +113,7 @@ const SubsidiaryList = ({
               if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            {sub.name}
+            {node.name}
           </button>
         );
       })}

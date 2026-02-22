@@ -4,8 +4,9 @@ import Logo from '@/components/ui/Logo';
 
 interface WorkspaceSidebarProps {
   companies: string[];
+  companyNames: Record<string, string>;
   selectedCompany: string | null;
-  onSelectCompany: (company: string) => void;
+  onSelectCompany: (id: string) => void;
   searchValue: string;
   onSearchChange: (value: string) => void;
   onLogout: () => void;
@@ -13,14 +14,15 @@ interface WorkspaceSidebarProps {
 
 const WorkspaceSidebar = ({
   companies,
+  companyNames,
   selectedCompany,
   onSelectCompany,
   searchValue,
   onSearchChange,
   onLogout,
 }: WorkspaceSidebarProps) => {
-  const filtered = companies.filter((c) =>
-    c.toLowerCase().includes(searchValue.toLowerCase())
+  const filtered = companies.filter((id) =>
+    (companyNames[id] ?? id).toLowerCase().includes(searchValue.toLowerCase())
   );
 
   return (
@@ -62,12 +64,13 @@ const WorkspaceSidebar = ({
             Inga träffar
           </p>
         ) : (
-          filtered.map((company) => {
-            const isSelected = selectedCompany === company;
+          filtered.map((id) => {
+            const isSelected = selectedCompany === id;
+            const name = companyNames[id] ?? id;
             return (
               <button
-                key={company}
-                onClick={() => onSelectCompany(company)}
+                key={id}
+                onClick={() => onSelectCompany(id)}
                 className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors"
                 style={{
                   backgroundColor: isSelected ? 'var(--pw-bg-tertiary)' : 'transparent',
@@ -82,7 +85,7 @@ const WorkspaceSidebar = ({
                 }}
               >
                 <Building2 size={14} style={{ flexShrink: 0, opacity: 0.6 }} />
-                {company}
+                {name}
               </button>
             );
           })

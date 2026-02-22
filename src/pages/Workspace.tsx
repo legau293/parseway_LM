@@ -6,23 +6,22 @@ import WorkspaceHeader from '@/components/workspace/WorkspaceHeader';
 import SubsidiaryList from '@/components/workspace/SubsidiaryList';
 import CollapsibleSection from '@/components/workspace/CollapsibleSection';
 import ObjectListView from '@/components/workspace/ObjectListView';
-import { getMockSubsidiaries, getMockObjects, Subsidiary, InsuranceObject } from '@/data/mockWorkspace';
-
-const COMPANIES = [
-  'Volvo AB',
-  'Atlas Copco',
-  'Assa Abloy',
-  'Sandvik',
-  'Hexagon',
-  'Epiroc',
-];
+import {
+  getRootCompanies,
+  getCompanyNodeById,
+  getChildCompanies,
+  getInsuranceObjects,
+  getPathToNode,
+  addChildNode,
+  addInsuranceObject,
+  CompanyNode,
+  InsuranceObject,
+} from '@/data/mockOrgTree';
 
 const Workspace = () => {
-  const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
-  const [subsidiaries, setSubsidiaries] = useState<Subsidiary[]>([]);
-  const [selectedSubsidiaryId, setSelectedSubsidiaryId] = useState<string | null>(null);
-  const [objectsBySubsidiaryId, setObjectsBySubsidiaryId] = useState<Record<string, InsuranceObject[]>>({});
-  const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
+  const [selectedRootId, setSelectedRootId] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [expandedObjectId, setExpandedObjectId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
   const [isSubsidiariesOpen, setIsSubsidiariesOpen] = useState(true);
@@ -33,6 +32,7 @@ const Workspace = () => {
   const [isAddingObject, setIsAddingObject] = useState(false);
   const [newObjectName, setNewObjectName] = useState('');
 
+  const [, forceUpdate] = useState(0);
   const addObjectInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -41,81 +41,66 @@ const Workspace = () => {
 
   const { logout } = useLogout();
 
-  const handleSelectCompany = (company: string) => {
-    const subs = getMockSubsidiaries(company);
-    const firstSubId = subs.length > 0 ? subs[0].id : null;
-    const objMap: Record<string, InsuranceObject[]> = {};
-    subs.forEach((s) => {
-      objMap[s.id] = getMockObjects(s.id);
-    });
-    setSelectedCompany(company);
-    setSubsidiaries(subs);
-    setSelectedSubsidiaryId(firstSubId);
-    setObjectsBySubsidiaryId(objMap);
-    setSelectedObjectId(null);
+  const rootCompanies = getRootCompanies();
+
+  const handleSelectRoot = (id: string) => {
+    setSelectedRootId(id);
+    setSelectedNodeId(id);
+    setExpandedObjectId(null);
     setIsAddingSubsidiary(false);
     setIsAddingObject(false);
     setNewSubsidiaryName('');
     setNewObjectName('');
   };
 
-  const handleSelectSubsidiary = (id: string) => {
-    setSelectedSubsidiaryId(id);
-    setSelectedObjectId(null);
+  const handleSelectNode = (id: string) => {
+    setSelectedNodeId(id);
+    setExpandedObjectId(null);
+    setIsAddingSubsidiary(false);
     setIsAddingObject(false);
+    setNewSubsidiaryName('');
     setNewObjectName('');
+  };
+
+  const handleToggleObject = (id: string) => {
+    setExpandedObjectId((prev) => (prev === id ? null : id));
   };
 
   const handleConfirmAddSubsidiary = () => {
     const name = newSubsidiaryName.trim();
-    if (!name) return;
-    const newId = `custom-sub-${Date.now()}`;
-    const newSub: Subsidiary = { id: newId, name };
-    setSubsidiaries((prev) => [...prev, newSub]);
-    setObjectsBySubsidiaryId((prev) => ({ ...prev, [newId]: [] }));
+    if (!name || !selectedNodeId) return;
+    const newNode = addChildNode(selectedNodeId, name);
     setNewSubsidiaryName('');
     setIsAddingSubsidiary(false);
-    setSelectedSubsidiaryId(newId);
-    setSelectedObjectId(null);
+    setSelectedNodeId(newNode.id);
+    setExpandedObjectId(null);
+    forceUpdate((n) => n + 1);
   };
 
   const handleConfirmAddObject = () => {
     const name = newObjectName.trim();
-    if (!name || !selectedSubsidiaryId) return;
-    const newObj: InsuranceObject = {
-      id: `custom-obj-${Date.now()}`,
-      name,
-      structurePct: 0,
-      verifiedPct: 0,
-      missingCount: 0,
-    };
-    setObjectsBySubsidiaryId((prev) => ({
-      ...prev,
-      [selectedSubsidiaryId]: [...(prev[selectedSubsidiaryId] ?? []), newObj],
-    }));
+    if (!name || !selectedNodeId) return;
+    addInsuranceObject(selectedNodeId, name);
     setNewObjectName('');
     setIsAddingObject(false);
+    forceUpdate((n) => n + 1);
   };
 
-  const handleGoToCompany = () => {
-    setSelectedObjectId(null);
-  };
+  const currentNode = selectedNodeId ? getCompanyNodeById(selectedNodeId) : null;
+  const childNodes = selectedNodeId ? getChildCompanies(selectedNodeId) : [];
+  const currentObjects = selectedNodeId ? getInsuranceObjects(selectedNodeId) : [];
+  const path = selectedNodeId ? getPathToNode(selectedNodeId) : [];
 
-  const handleGoToSubsidiary = () => {
-    setSelectedObjectId(null);
-  };
-
-  const currentObjects = selectedSubsidiaryId ? (objectsBySubsidiaryId[selectedSubsidiaryId] ?? []) : [];
-  const selectedSubsidiary = subsidiaries.find((s) => s.id === selectedSubsidiaryId) ?? null;
-  const selectedObject = currentObjects.find((o) => o.id === selectedObjectId) ?? null;
+  const selectedRoot = selectedRootId ? getCompanyNodeById(selectedRootId) : null;
 
   return (
     <WorkspaceShell
       sidebar={
         <WorkspaceSidebar
-          companies={COMPANIES}
-          selectedCompany={selectedCompany}
-          onSelectCompany={handleSelectCompany}
+          companies={rootCompanies.map((c) => c.id)}
+          companyNames={Object.fromEntries(rootCompanies.map((c) => [c.id, c.name]))}
+          selectedCompany={selectedRootId}
+          onSelectCompany={handleSelectRoot}
           searchValue={search}
           onSearchChange={setSearch}
           onLogout={logout}
@@ -123,7 +108,7 @@ const Workspace = () => {
       }
     >
       <div className="px-10 py-8 max-w-3xl">
-        {!selectedCompany ? (
+        {!selectedRootId ? (
           <div
             className="rounded-lg p-6"
             style={{
@@ -147,17 +132,14 @@ const Workspace = () => {
         ) : (
           <>
             <WorkspaceHeader
-              companyName={selectedCompany}
-              subsidiaryName={selectedSubsidiary?.name ?? null}
-              objectName={selectedObject?.name ?? null}
-              onGoToCompany={handleGoToCompany}
-              onGoToSubsidiary={handleGoToSubsidiary}
+              path={path.map((n) => ({ id: n.id, name: n.name }))}
+              onSelectNode={handleSelectNode}
             />
 
             <SubsidiaryList
-              subsidiaries={subsidiaries}
-              selectedSubsidiaryId={selectedSubsidiaryId}
-              onSelect={handleSelectSubsidiary}
+              nodes={childNodes}
+              selectedNodeId={selectedNodeId}
+              onSelect={handleSelectNode}
               isOpen={isSubsidiariesOpen}
               onToggle={() => setIsSubsidiariesOpen((v) => !v)}
               isAdding={isAddingSubsidiary}
@@ -217,37 +199,11 @@ const Workspace = () => {
                 </div>
               )}
 
-              {selectedObject ? (
-                <div className="px-4 py-3">
-                  <p
-                    className="text-base mb-1"
-                    style={{ color: 'var(--pw-text-primary)', fontWeight: 500 }}
-                  >
-                    {selectedObject.name}
-                  </p>
-                  <p
-                    className="text-sm mb-3"
-                    style={{ color: 'var(--pw-text-secondary)', fontWeight: 400 }}
-                  >
-                    Här kommer objektvyn med 3-kolumnsgränssnittet.
-                  </p>
-                  <button
-                    onClick={() => setSelectedObjectId(null)}
-                    className="text-xs transition-colors"
-                    style={{ color: 'var(--pw-text-secondary)', fontWeight: 400 }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--pw-text-primary)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--pw-text-secondary)')}
-                  >
-                    ← Tillbaka till listan
-                  </button>
-                </div>
-              ) : (
-                <ObjectListView
-                  objects={currentObjects}
-                  selectedObjectId={selectedObjectId}
-                  onSelectObject={setSelectedObjectId}
-                />
-              )}
+              <ObjectListView
+                objects={currentObjects}
+                expandedObjectId={expandedObjectId}
+                onToggleObject={handleToggleObject}
+              />
             </CollapsibleSection>
           </>
         )}
