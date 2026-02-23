@@ -479,6 +479,68 @@ export function deleteInsuranceObjects(
   }
 }
 
+export function updateObjectBuildings(
+  rootId: string,
+  subsidiaryId: string | null,
+  objId: string,
+  buildings: Building[]
+): void {
+  const root = _tree[rootId];
+  if (!root) return;
+  const applyPatch = (objs: InsuranceObject[]) =>
+    objs.map((o) => (o.id === objId ? { ...o, buildings } : o));
+  if (subsidiaryId === null) {
+    _tree = { ..._tree, [rootId]: { ...root, rootInsuranceObjects: applyPatch(root.rootInsuranceObjects) } };
+  } else {
+    _tree = {
+      ..._tree,
+      [rootId]: {
+        ...root,
+        subsidiaries: root.subsidiaries.map((s) =>
+          s.id === subsidiaryId ? { ...s, insuranceObjects: applyPatch(s.insuranceObjects) } : s
+        ),
+      },
+    };
+  }
+}
+
+export function updateBuildingParameter(
+  rootId: string,
+  subsidiaryId: string | null,
+  objId: string,
+  buildingId: string,
+  paramId: string,
+  patch: Partial<Pick<ObjectParameter, 'value' | 'status'>>
+): void {
+  const root = _tree[rootId];
+  if (!root) return;
+  const applyPatch = (objs: InsuranceObject[]) =>
+    objs.map((o) => {
+      if (o.id !== objId) return o;
+      const buildings = (o.buildings ?? []).map((b) => {
+        if (b.id !== buildingId) return b;
+        const params = b.parameters.map((p) => (p.id === paramId ? { ...p, ...patch } : p));
+        return { ...b, parameters: params };
+      });
+      const allParams = buildings.flatMap((b) => b.parameters);
+      const verifiedCount = allParams.filter((p) => p.status === 'verified').length;
+      return { ...o, buildings, fieldsVerified: verifiedCount, fieldsTotal: allParams.length };
+    });
+  if (subsidiaryId === null) {
+    _tree = { ..._tree, [rootId]: { ...root, rootInsuranceObjects: applyPatch(root.rootInsuranceObjects) } };
+  } else {
+    _tree = {
+      ..._tree,
+      [rootId]: {
+        ...root,
+        subsidiaries: root.subsidiaries.map((s) =>
+          s.id === subsidiaryId ? { ...s, insuranceObjects: applyPatch(s.insuranceObjects) } : s
+        ),
+      },
+    };
+  }
+}
+
 export function updateObjectParameter(
   rootId: string,
   subsidiaryId: string | null,

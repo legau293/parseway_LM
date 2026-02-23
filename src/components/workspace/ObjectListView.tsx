@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Pencil, X, Check } from 'lucide-react';
-import { InsuranceObject, ParameterStatus } from '@/data/mockOrgTree';
+import { Building, InsuranceObject, ParameterStatus } from '@/data/mockOrgTree';
 import ObjectRow, { ObjectListHeader, SortColumn, SortDirection } from './ObjectRow';
 import ObjectThreeColumnView from './ObjectThreeColumnView';
 
@@ -246,6 +246,8 @@ interface ObjectListViewProps {
   onUpdateObject: (id: string, patch: Partial<Pick<InsuranceObject, 'name' | 'objectType' | 'description'>>) => void;
   onVerifyField: (objId: string) => void;
   onUpdateParameter?: (objId: string, paramId: string, patch: { value?: string; status?: ParameterStatus }) => void;
+  onUpdateBuildingParameter?: (objId: string, buildingId: string, paramId: string, patch: { value?: string; status?: ParameterStatus }) => void;
+  onUpdateBuildings?: (objId: string, buildings: Building[]) => void;
   showCheckboxes?: boolean;
   sortColumn?: SortColumn;
   sortDirection?: SortDirection;
@@ -261,6 +263,8 @@ const ObjectListView = ({
   onUpdateObject,
   onVerifyField,
   onUpdateParameter,
+  onUpdateBuildingParameter,
+  onUpdateBuildings,
   showCheckboxes = false,
   sortColumn,
   sortDirection,
@@ -302,6 +306,8 @@ const ObjectListView = ({
                 <ObjectThreeColumnView
                   object={obj}
                   onUpdateParameter={(paramId, patch) => onUpdateParameter?.(obj.id, paramId, patch)}
+                  onUpdateBuildingParameter={(buildingId, paramId, patch) => onUpdateBuildingParameter?.(obj.id, buildingId, paramId, patch)}
+                  onUpdateBuildings={(buildings) => onUpdateBuildings?.(obj.id, buildings)}
                 />
               </div>
             )}

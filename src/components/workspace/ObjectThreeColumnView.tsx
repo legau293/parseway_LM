@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Check, FileText, ChevronRight } from 'lucide-react';
-import { InsuranceObject, ObjectParameter, ParameterStatus } from '@/data/mockOrgTree';
+import { Building, InsuranceObject, ObjectParameter, ParameterStatus } from '@/data/mockOrgTree';
 import { getProgressFill } from './ProgressPill';
 import BuildingSwitcher from './BuildingSwitcher';
 
 interface Props {
   object: InsuranceObject;
   onUpdateParameter: (paramId: string, patch: { value?: string; status?: ParameterStatus }) => void;
+  onUpdateBuildingParameter?: (buildingId: string, paramId: string, patch: { value?: string; status?: ParameterStatus }) => void;
+  onUpdateBuildings?: (buildings: Building[]) => void;
 }
 
 const TEAL = '#2DB7A3';
@@ -89,9 +91,10 @@ function ParameterRow({
     <div
       onClick={() => { onSelect(); }}
       style={{
-        display: 'flex',
+        display: 'grid',
+        gridTemplateColumns: '16px 180px 1fr 16px',
+        columnGap: '8px',
         alignItems: 'center',
-        gap: '8px',
         padding: '4px 16px',
         cursor: 'pointer',
         backgroundColor: isSelected ? 'var(--pw-bg-tertiary)' : 'transparent',
@@ -103,20 +106,18 @@ function ParameterRow({
     >
       <StatusDot status={param.status} />
 
-      <div
-        style={{
-          minWidth: '130px',
-          flexShrink: 0,
-          userSelect: 'none',
-        }}
-      >
+      <div style={{ minWidth: 0, userSelect: 'none' }}>
         <span
           style={{
             fontSize: '11px',
             lineHeight: 1.25,
             color: 'var(--pw-text-tertiary)',
             display: 'block',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
           }}
+          title={param.label}
         >
           {param.label}
         </span>
@@ -129,6 +130,9 @@ function ParameterRow({
               display: 'block',
               marginTop: '1px',
               lineHeight: 1.25,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}
           >
             {param.helpText}
@@ -136,7 +140,7 @@ function ParameterRow({
         )}
       </div>
 
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ minWidth: 0 }}>
         {editing ? (
           <input
             ref={inputRef}
@@ -154,6 +158,7 @@ function ParameterRow({
               padding: '1px 6px',
               outline: 'none',
               width: '100%',
+              boxSizing: 'border-box',
             }}
           />
         ) : (
@@ -164,16 +169,18 @@ function ParameterRow({
               lineHeight: 1.25,
               color: param.value ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)',
               display: 'block',
-              wordBreak: 'break-word',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}
-            title="Dubbelklicka för att redigera"
+            title={param.value ? param.value : 'Dubbelklicka för att redigera'}
           >
             {param.value || '–'}
           </span>
         )}
       </div>
 
-      {param.status !== 'verified' && !editing && (
+      {param.status !== 'verified' && !editing ? (
         <button
           onClick={handleVerify}
           title="Bekräfta"
@@ -197,6 +204,8 @@ function ParameterRow({
         >
           <Check size={11} />
         </button>
+      ) : (
+        <span />
       )}
     </div>
   );
@@ -535,32 +544,37 @@ function cloneParamsEmpty(template: ObjectParameter[]): ObjectParameter[] {
   }));
 }
 
-const ObjectThreeColumnView = ({ object, onUpdateParameter }: Props) => {
+const ObjectThreeColumnView = ({ object, onUpdateParameter, onUpdateBuildingParameter, onUpdateBuildings }: Props) => {
   const isFastighet = object.objectType === 'Fastighet';
 
-  const [buildings, setBuildings] = useState<Building[]>(() => {
+  const getInitialBuildings = (): Building[] => {
     if (!isFastighet) return [];
     if (object.buildings && object.buildings.length > 0) return object.buildings;
     return [{ id: `${object.id}-default`, name: 'Byggnad A', parameters: object.parameters ?? [] }];
-  });
+  };
 
-  const [activeBuildingId, setActiveBuildingId] = useState<string>(() => buildings[0]?.id ?? '');
+  const [buildings, setBuildings] = useState<Building[]>(getInitialBuildings);
+  const [activeBuildingId, setActiveBuildingId] = useState<string>(() => getInitialBuildings()[0]?.id ?? '');
   const [selectedParamId, setSelectedParamId] = useState<string | null>(null);
   const [activeSectionKey, setActiveSectionKey] = useState<string | null>(null);
 
   useEffect(() => {
-    const fresh = (() => {
-      if (!isFastighet) return [];
-      if (object.buildings && object.buildings.length > 0) return object.buildings;
-      return [{ id: `${object.id}-default`, name: 'Byggnad A', parameters: object.parameters ?? [] }];
-    })();
+    const fresh = getInitialBuildings();
     setBuildings(fresh);
     const firstId = fresh[0]?.id ?? '';
     setActiveBuildingId(firstId);
     setSelectedParamId(fresh[0]?.parameters[0]?.id ?? null);
     setActiveSectionKey(null);
-    console.log('[BuildingSwitcher] object.id:', object.id, '| objectType:', object.objectType, '| buildings.length:', object.buildings?.length ?? 0);
   }, [object.id]);
+
+  useEffect(() => {
+    if (object.buildings) {
+      setBuildings(object.buildings.length > 0
+        ? object.buildings
+        : [{ id: `${object.id}-default`, name: 'Byggnad A', parameters: object.parameters ?? [] }]
+      );
+    }
+  }, [object.buildings]);
 
   useEffect(() => {
     const b = buildings.find((b) => b.id === activeBuildingId) ?? buildings[0];
@@ -581,6 +595,11 @@ const ObjectThreeColumnView = ({ object, onUpdateParameter }: Props) => {
     return Math.round((verified / total) * 100);
   };
 
+  const persistBuildings = (next: Building[]) => {
+    setBuildings(next);
+    onUpdateBuildings?.(next);
+  };
+
   const handleAddBuilding = () => {
     const template = buildings[0]?.parameters ?? object.parameters ?? [];
     const newBuilding: Building = {
@@ -588,8 +607,36 @@ const ObjectThreeColumnView = ({ object, onUpdateParameter }: Props) => {
       name: nextBuildingName(buildings),
       parameters: cloneParamsEmpty(template),
     };
-    setBuildings((prev) => [...prev, newBuilding]);
+    const next = [...buildings, newBuilding];
+    persistBuildings(next);
     setActiveBuildingId(newBuilding.id);
+  };
+
+  const handleDeleteBuilding = (buildingId: string) => {
+    if (buildings.length <= 1) return;
+    const idx = buildings.findIndex((b) => b.id === buildingId);
+    const next = buildings.filter((b) => b.id !== buildingId);
+    persistBuildings(next);
+    const newActive = next[Math.max(0, idx - 1)]?.id ?? next[0]?.id ?? '';
+    setActiveBuildingId(newActive);
+  };
+
+  const handleUpdateParam = (paramId: string, patch: { value?: string; status?: ParameterStatus }) => {
+    if (isFastighet && activeBuilding) {
+      if (onUpdateBuildingParameter) {
+        onUpdateBuildingParameter(activeBuilding.id, paramId, patch);
+      }
+      const nextBuildings = buildings.map((b) => {
+        if (b.id !== activeBuilding.id) return b;
+        return {
+          ...b,
+          parameters: b.parameters.map((p) => (p.id === paramId ? { ...p, ...patch } : p)),
+        };
+      });
+      setBuildings(nextBuildings);
+    } else {
+      onUpdateParameter(paramId, patch);
+    }
   };
 
   if (!isFastighet && (object.parameters ?? []).length === 0) {
@@ -616,6 +663,7 @@ const ObjectThreeColumnView = ({ object, onUpdateParameter }: Props) => {
       onSelect={setActiveBuildingId}
       getProgress={getBuildingProgress}
       onAddBuilding={handleAddBuilding}
+      onDeleteBuilding={handleDeleteBuilding}
     />
   ) : undefined;
 
@@ -638,7 +686,7 @@ const ObjectThreeColumnView = ({ object, onUpdateParameter }: Props) => {
           setSelectedParamId(id);
           setActiveSectionKey(null);
         }}
-        onUpdateParam={onUpdateParameter}
+        onUpdateParam={handleUpdateParam}
         switcher={switcherNode}
       />
       <MiddleColumn

@@ -19,6 +19,9 @@ import {
   incrementFieldVerified,
   updateInsuranceObject,
   updateObjectParameter,
+  updateBuildingParameter,
+  updateObjectBuildings,
+  Building,
   InsuranceObject,
   ParameterStatus,
 } from '@/data/mockOrgTree';
@@ -632,6 +635,23 @@ const Workspace = () => {
     setTree(getTree());
   };
 
+  const handleUpdateBuildingParameter = (
+    objId: string,
+    buildingId: string,
+    paramId: string,
+    patch: { value?: string; status?: ParameterStatus }
+  ) => {
+    if (!selectedRootId) return;
+    updateBuildingParameter(selectedRootId, selectedSubsidiaryId, objId, buildingId, paramId, patch);
+    setTree(getTree());
+  };
+
+  const handleUpdateBuildings = (objId: string, buildings: Building[]) => {
+    if (!selectedRootId) return;
+    updateObjectBuildings(selectedRootId, selectedSubsidiaryId, objId, buildings);
+    setTree(getTree());
+  };
+
 
   const renderHome = () => (
     <div className="flex items-center justify-center h-full" style={{ minHeight: '200px' }}>
@@ -790,6 +810,8 @@ const Workspace = () => {
               onUpdateObject={handleUpdateObject}
               onVerifyField={handleVerifyField}
               onUpdateParameter={handleUpdateParameter}
+              onUpdateBuildingParameter={handleUpdateBuildingParameter}
+              onUpdateBuildings={handleUpdateBuildings}
               showCheckboxes={true}
               sortColumn={objSortColumn}
               sortDirection={objSortDirection}
@@ -878,6 +900,8 @@ const Workspace = () => {
               onUpdateObject={handleUpdateObject}
               onVerifyField={handleVerifyField}
               onUpdateParameter={handleUpdateParameter}
+              onUpdateBuildingParameter={handleUpdateBuildingParameter}
+              onUpdateBuildings={handleUpdateBuildings}
               showCheckboxes={true}
               sortColumn={objSortColumn}
               sortDirection={objSortDirection}
