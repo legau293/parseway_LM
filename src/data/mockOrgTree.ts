@@ -17,6 +17,12 @@ export interface ObjectParameter {
   helpText?: string;
 }
 
+export interface Building {
+  id: string;
+  name: string;
+  parameters: ObjectParameter[];
+}
+
 export interface InsuranceObject {
   id: string;
   name: string;
@@ -25,6 +31,7 @@ export interface InsuranceObject {
   fieldsTotal: number;
   fieldsVerified: number;
   parameters?: ObjectParameter[];
+  buildings?: Building[];
 }
 
 export interface Subsidiary {
@@ -151,10 +158,23 @@ const buildInitialTree = (): OrgTree => ({
       {
         id: 'volvo-fastigheter', name: 'Volvo Fastigheter AB', orgnr: '556234-1122',
         insuranceObjects: [
-          { id: 'vf-1', name: 'Kontorshus Torslanda', objectType: 'Fastighet', description: 'Kontorskomplex med 4 våningar, byggd 1998', fieldsTotal: 24, fieldsVerified: 18, parameters: fastighetParams() },
+          {
+            id: 'vf-1', name: 'Kontorshus Torslanda', objectType: 'Fastighet', description: 'Kontorskomplex med 4 våningar, byggd 1998', fieldsTotal: 24, fieldsVerified: 18, parameters: fastighetParams(),
+            buildings: [
+              { id: 'vf-1-b1', name: 'Byggnad A', parameters: fastighetParams() },
+              { id: 'vf-1-b2', name: 'Byggnad B', parameters: fastighetParams([{},{},{status:'missing',value:''},{status:'ai',value:'1 200 000'},{status:'missing',value:''}]) },
+              { id: 'vf-1-b3', name: 'Byggnad C', parameters: fastighetParams([{status:'ai'},{status:'verified',value:'4'},{status:'verified',value:'Kontorsbyggnad klass B'},{},{status:'missing',value:''}]) },
+            ],
+          },
           { id: 'vf-2', name: 'Verkstad Skövde', objectType: 'Fastighet', description: 'Industrilokal för fordonsservice och underhåll', fieldsTotal: 20, fieldsVerified: 10, parameters: fastighetParams([{},{},{status:'missing',value:''},{},{status:'missing',value:''},{status:'missing',value:''}]) },
           { id: 'vf-3', name: 'Lagerlokal Göteborg', objectType: 'Fastighet', description: 'Lagerbyggnad 12 000 m², automatiserad', fieldsTotal: 18, fieldsVerified: 17, parameters: fastighetParams([{},{},{status:'verified'},{},{status:'verified'},{},{status:'verified'},{status:'verified'}]) },
-          { id: 'vf-4', name: 'P-hus Arendal', objectType: 'Fastighet', description: 'Flervåningsparkering med 800 platser', fieldsTotal: 16, fieldsVerified: 7, parameters: fastighetParams([{status:'missing',value:''},{status:'ai'},{status:'missing',value:''},{status:'ai'},{status:'missing',value:''},{status:'missing',value:''}]) },
+          {
+            id: 'vf-4', name: 'P-hus Arendal', objectType: 'Fastighet', description: 'Flervåningsparkering med 800 platser', fieldsTotal: 16, fieldsVerified: 7, parameters: fastighetParams([{status:'missing',value:''},{status:'ai'},{status:'missing',value:''},{status:'ai'},{status:'missing',value:''},{status:'missing',value:''}]),
+            buildings: [
+              { id: 'vf-4-b1', name: 'P-hus Nord', parameters: fastighetParams([{status:'missing',value:''},{status:'ai'},{status:'missing',value:''}]) },
+              { id: 'vf-4-b2', name: 'P-hus Syd', parameters: fastighetParams([{status:'ai'},{status:'missing',value:''},{status:'ai',value:'400'},{status:'missing',value:''}]) },
+            ],
+          },
         ],
       },
       {

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Check, FileText, ChevronRight } from 'lucide-react';
 import { InsuranceObject, ObjectParameter, ParameterStatus } from '@/data/mockOrgTree';
 import { getProgressFill } from './ProgressPill';
+import BuildingSwitcher from './BuildingSwitcher';
 
 interface Props {
   object: InsuranceObject;
@@ -225,11 +226,13 @@ function LeftColumn({
   selectedParamId,
   onSelectParam,
   onUpdateParam,
+  switcher,
 }: {
   params: ObjectParameter[];
   selectedParamId: string | null;
   onSelectParam: (id: string) => void;
   onUpdateParam: (id: string, patch: { value?: string; status?: ParameterStatus }) => void;
+  switcher?: React.ReactNode;
 }) {
   const verifiedCount = params.filter((p) => p.status === 'verified').length;
   const total = params.length;
@@ -248,6 +251,7 @@ function LeftColumn({
         borderRight: '1px solid var(--pw-border)',
       }}
     >
+      {switcher}
       <div style={{ padding: '12px 16px 8px', borderBottom: '1px solid var(--pw-border)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
           <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--pw-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
@@ -512,19 +516,43 @@ function RightColumn({ activeSectionKey }: { activeSectionKey: string | null }) 
 }
 
 const ObjectThreeColumnView = ({ object, onUpdateParameter }: Props) => {
-  const params = object.parameters ?? [];
-  const [selectedParamId, setSelectedParamId] = useState<string | null>(params[0]?.id ?? null);
+  const buildings = object.buildings ?? [];
+  const hasBuildings = buildings.length > 0;
+
+  const [activeBuildingId, setActiveBuildingId] = useState<string>(() => buildings[0]?.id ?? '');
+  const [selectedParamId, setSelectedParamId] = useState<string | null>(null);
   const [activeSectionKey, setActiveSectionKey] = useState<string | null>(null);
+
+  const activeBuilding = hasBuildings ? buildings.find((b) => b.id === activeBuildingId) ?? buildings[0] : null;
+  const params = hasBuildings ? (activeBuilding?.parameters ?? []) : (object.parameters ?? []);
+
+  useEffect(() => {
+    const firstBuilding = buildings[0];
+    setActiveBuildingId(firstBuilding?.id ?? '');
+    setSelectedParamId(null);
+    setActiveSectionKey(null);
+  }, [object.id]);
 
   useEffect(() => {
     setSelectedParamId(params[0]?.id ?? null);
     setActiveSectionKey(null);
-  }, [object.id]);
+  }, [activeBuildingId]);
 
   const selectedParam = params.find((p) => p.id === selectedParamId) ?? null;
 
+  const getBuildingProgress = (b: { parameters: { status: string }[] }) => {
+    const total = b.parameters.length;
+    if (total === 0) return 0;
+    const verified = b.parameters.filter((p) => p.status === 'verified').length;
+    return Math.round((verified / total) * 100);
+  };
+
   const handleSelectSection = (key: string | null) => {
     setActiveSectionKey(key);
+  };
+
+  const handleSwitchBuilding = (id: string) => {
+    setActiveBuildingId(id);
   };
 
   if (params.length === 0) {
@@ -543,6 +571,15 @@ const ObjectThreeColumnView = ({ object, onUpdateParameter }: Props) => {
       </div>
     );
   }
+
+  const switcherNode = hasBuildings ? (
+    <BuildingSwitcher
+      buildings={buildings}
+      activeBuildingId={activeBuildingId}
+      onSelect={handleSwitchBuilding}
+      getProgress={getBuildingProgress}
+    />
+  ) : undefined;
 
   return (
     <div
@@ -564,6 +601,7 @@ const ObjectThreeColumnView = ({ object, onUpdateParameter }: Props) => {
           setActiveSectionKey(null);
         }}
         onUpdateParam={onUpdateParameter}
+        switcher={switcherNode}
       />
       <MiddleColumn
         param={selectedParam}
