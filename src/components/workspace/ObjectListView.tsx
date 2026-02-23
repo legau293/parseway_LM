@@ -297,7 +297,6 @@ const ObjectListView = ({
                   width: '100%',
                   backgroundColor: 'var(--pw-bg-secondary)',
                   isolation: 'isolate',
-                  overflow: 'hidden',
                 }}
               >
                 <ObjectThreeColumnView

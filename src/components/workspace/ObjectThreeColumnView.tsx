@@ -243,6 +243,7 @@ function LeftColumn({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
+        minHeight: 0,
         borderRight: '1px solid var(--pw-border)',
       }}
     >
@@ -338,6 +339,7 @@ function MiddleColumn({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
+        minHeight: 0,
         borderRight: '1px solid var(--pw-border)',
       }}
     >
@@ -463,7 +465,7 @@ function RightColumn({ activeSectionKey }: { activeSectionKey: string | null }) 
   const activeSection = MOCK_DOC_SECTIONS.find((s) => s.key === activeSectionKey);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
       <div style={{ padding: '12px 16px 8px', borderBottom: '1px solid var(--pw-border)', flexShrink: 0 }}>
         <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--pw-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
           Originaldokument
@@ -548,7 +550,8 @@ const ObjectThreeColumnView = ({ object, onUpdateParameter }: Props) => {
         backgroundColor: 'var(--pw-bg-primary)',
         display: 'grid',
         gridTemplateColumns: '1.5fr 0.8fr 1.1fr',
-        height: '380px',
+        minHeight: '380px',
+        maxHeight: 'calc(100vh - 120px)',
       }}
     >
       <LeftColumn
