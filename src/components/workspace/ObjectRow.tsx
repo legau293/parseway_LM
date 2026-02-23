@@ -94,6 +94,7 @@ export const ObjectListHeader = ({ showCheckbox, sortColumn, sortDirection, onSo
       >
         Beskrivning<SortIcon col="description" />
       </span>
+      <span className="text-xs" style={{ color: 'var(--pw-text-secondary)', width: '80px', flexShrink: 0 }}>Byggnader</span>
       <span className="text-xs" style={{ color: 'var(--pw-text-secondary)', width: '160px', flexShrink: 0 }}>Färdigställt</span>
     </div>
   );
@@ -148,6 +149,12 @@ const ObjectRow = ({ object, isExpanded, isChecked = false, showCheckbox = false
 
       <span className="truncate text-xs flex-1" style={{ color: 'var(--pw-text-tertiary)' }}>
         {object.description}
+      </span>
+
+      <span className="text-xs" style={{ width: '80px', flexShrink: 0, color: 'var(--pw-text-secondary)' }}>
+        {object.objectType === 'Fastighet'
+          ? (object.buildings && object.buildings.length > 0 ? object.buildings.length : 1)
+          : '–'}
       </span>
 
       <div style={{ width: '160px', flexShrink: 0 }}>
