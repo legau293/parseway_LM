@@ -1,10 +1,11 @@
 import React, { useRef, useEffect } from 'react';
-import { Search, Building2, Star, Plus, Settings, HelpCircle, LogOut, ChevronDown } from 'lucide-react';
+import { Search, Building2, Star, Plus, Settings, HelpCircle, LogOut, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import Logo from '@/components/ui/Logo';
 import ProgressPill from './ProgressPill';
 import { getNodeProgress } from '@/utils/progress';
 import { OrgTree } from '@/data/mockOrgTree';
 import { useAuth } from '@/contexts/AuthContext';
+import * as Tooltip from '@radix-ui/react-tooltip';
 
 interface WorkspaceSidebarProps {
   companies: string[];
@@ -32,6 +33,36 @@ function useClickOutside(ref: React.RefObject<HTMLElement>, handler: () => void)
   }, [ref, handler]);
 }
 
+function NavTooltip({ label, collapsed, children }: { label: string; collapsed: boolean; children: React.ReactNode }) {
+  if (!collapsed) return <>{children}</>;
+  return (
+    <Tooltip.Provider delayDuration={300}>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>{children}</Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Content
+            side="right"
+            sideOffset={8}
+            style={{
+              fontSize: '12px',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              backgroundColor: 'var(--pw-bg-secondary)',
+              border: '1px solid var(--pw-border)',
+              color: 'var(--pw-text-primary)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.14)',
+              zIndex: 100,
+              pointerEvents: 'none',
+            }}
+          >
+            {label}
+          </Tooltip.Content>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
+  );
+}
+
 const CompanyRow = ({
   id,
   name,
@@ -40,6 +71,7 @@ const CompanyRow = ({
   pct,
   onSelect,
   onToggleFavorite,
+  collapsed,
 }: {
   id: string;
   name: string;
@@ -48,45 +80,67 @@ const CompanyRow = ({
   pct: number;
   onSelect: () => void;
   onToggleFavorite: (e: React.MouseEvent) => void;
+  collapsed: boolean;
 }) => {
   const [hovered, setHovered] = React.useState(false);
-  return (
+
+  const inner = (
     <div
-      className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors"
+      className="flex items-center rounded-md transition-colors"
       style={{
+        gap: collapsed ? 0 : '8px',
+        padding: collapsed ? '6px' : '6px 8px',
+        justifyContent: collapsed ? 'center' : undefined,
         backgroundColor: isSelected || hovered ? 'var(--pw-bg-tertiary)' : 'transparent',
         color: isSelected ? 'var(--pw-text-primary)' : 'var(--pw-text-secondary)',
         fontWeight: isSelected ? 500 : 400,
+        cursor: 'pointer',
+        borderLeft: isSelected ? '2px solid var(--pw-accent-red)' : '2px solid transparent',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={onSelect}
     >
-      <button onClick={onSelect} className="flex items-center gap-2 flex-1 min-w-0 text-left">
-        <Building2 size={14} style={{ flexShrink: 0, opacity: 0.6 }} />
-        <span className="flex-1 truncate">{name}</span>
-      </button>
-      <ProgressPill pct={pct} barWidth={56} showPct={false} />
-      <button
-        onClick={onToggleFavorite}
-        className="shrink-0 transition-all"
-        style={{
-          opacity: isFavorite || hovered ? 1 : 0,
-          color: isFavorite ? '#2DB7A3' : 'var(--pw-text-tertiary)',
-        }}
-        title={isFavorite ? 'Ta bort favorit' : 'Lägg till favorit'}
-      >
-        <Star size={12} fill={isFavorite ? '#2DB7A3' : 'none'} />
-      </button>
+      <Building2 size={14} style={{ flexShrink: 0, opacity: 0.6 }} />
+      {!collapsed && (
+        <>
+          <span className="flex-1 truncate text-sm">{name}</span>
+          <ProgressPill pct={pct} barWidth={40} showPct={false} />
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleFavorite(e); }}
+            className="shrink-0 transition-all"
+            style={{
+              opacity: isFavorite || hovered ? 1 : 0,
+              color: isFavorite ? '#2DB7A3' : 'var(--pw-text-tertiary)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+            }}
+            title={isFavorite ? 'Ta bort favorit' : 'Lägg till favorit'}
+          >
+            <Star size={12} fill={isFavorite ? '#2DB7A3' : 'none'} />
+          </button>
+        </>
+      )}
     </div>
+  );
+
+  return (
+    <NavTooltip label={name} collapsed={collapsed}>
+      {inner}
+    </NavTooltip>
   );
 };
 
 const UserMenu = ({
   displayName,
   onLogout,
+  collapsed,
 }: {
   displayName: string;
   onLogout: () => void;
+  collapsed: boolean;
 }) => {
   const [open, setOpen] = React.useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -107,6 +161,41 @@ const UserMenu = ({
     borderRadius: '4px',
     transition: 'background 0.1s',
   };
+
+  if (collapsed) {
+    return (
+      <NavTooltip label={displayName} collapsed={true}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            padding: '6px',
+            borderRadius: '6px',
+            cursor: 'default',
+          }}
+        >
+          <div
+            style={{
+              width: '26px',
+              height: '26px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--pw-bg-tertiary)',
+              border: '1px solid var(--pw-border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '11px',
+              fontWeight: 600,
+              color: 'var(--pw-text-secondary)',
+              flexShrink: 0,
+            }}
+          >
+            {displayName.charAt(0).toUpperCase()}
+          </div>
+        </div>
+      </NavTooltip>
+    );
+  }
 
   return (
     <div ref={menuRef} style={{ position: 'relative' }}>
@@ -197,6 +286,7 @@ const WorkspaceSidebar = ({
   onAddCompany,
   tree,
 }: WorkspaceSidebarProps) => {
+  const [collapsed, setCollapsed] = React.useState(() => localStorage.getItem('sidebarCollapsed') === 'true');
   const [isAddingCompany, setIsAddingCompany] = React.useState(false);
   const [newCompanyName, setNewCompanyName] = React.useState('');
   const addInputRef = useRef<HTMLInputElement>(null);
@@ -213,6 +303,14 @@ const WorkspaceSidebar = ({
   useEffect(() => {
     if (isAddingCompany) addInputRef.current?.focus();
   }, [isAddingCompany]);
+
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('sidebarCollapsed', String(next));
+      return next;
+    });
+  };
 
   const handleConfirmAdd = () => {
     const name = newCompanyName.trim();
@@ -250,137 +348,181 @@ const WorkspaceSidebar = ({
         pct={progress.pct}
         onSelect={() => onSelectCompany(id)}
         onToggleFavorite={(e) => { e.stopPropagation(); onToggleFavorite(id); }}
+        collapsed={collapsed}
       />
     );
   };
 
   return (
     <aside
-      className="flex flex-col border-r"
+      className="flex flex-col border-r flex-shrink-0"
       style={{
-        width: '280px',
-        minWidth: '280px',
+        width: collapsed ? '56px' : '280px',
+        minWidth: collapsed ? '56px' : '280px',
         backgroundColor: 'var(--pw-bg-secondary)',
         borderColor: 'var(--pw-border)',
+        transition: 'width 200ms ease-out, min-width 200ms ease-out',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
-      <div className="px-5 pt-5 pb-3">
+      <div style={{ padding: collapsed ? '16px 8px 12px' : '20px 20px 12px' }}>
         <button
           onClick={onLogoClick}
-          className="block mb-4"
-          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+          className="block"
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            marginBottom: collapsed ? '12px' : '16px',
+            display: 'flex',
+            justifyContent: collapsed ? 'center' : undefined,
+          }}
         >
-          <Logo size="sm" showText={true} />
+          <Logo size="sm" showText={!collapsed} />
         </button>
 
-        <UserMenu displayName={displayName} onLogout={onLogout} />
+        <UserMenu displayName={displayName} onLogout={onLogout} collapsed={collapsed} />
 
-        <div className="mt-2">
-          {isAddingCompany ? (
-            <div
-              className="rounded-md px-3 py-2"
-              style={{ backgroundColor: 'var(--pw-bg-tertiary)', border: '1px solid var(--pw-border)' }}
-            >
-              <input
-                ref={addInputRef}
-                value={newCompanyName}
-                onChange={(e) => setNewCompanyName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleConfirmAdd();
-                  if (e.key === 'Escape') handleCancelAdd();
-                }}
-                placeholder="Moderbolagsnamn…"
-                className="bg-transparent outline-none w-full text-sm mb-2"
-                style={{ color: 'var(--pw-text-primary)', caretColor: 'var(--pw-primary)', display: 'block' }}
-                onFocus={(e) => (e.currentTarget.parentElement!.style.borderColor = 'var(--pw-accent-red)')}
-                onBlur={(e) => (e.currentTarget.parentElement!.style.borderColor = 'var(--pw-border)')}
-              />
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleConfirmAdd}
-                  disabled={!newCompanyName.trim()}
-                  className="text-xs px-2 py-0.5 rounded"
-                  style={{
-                    border: `1px solid ${newCompanyName.trim() ? 'var(--pw-accent-red)' : 'var(--pw-border)'}`,
-                    color: newCompanyName.trim() ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)',
-                    opacity: newCompanyName.trim() ? 1 : 0.5,
-                    cursor: newCompanyName.trim() ? 'pointer' : 'default',
-                    backgroundColor: 'transparent',
+        {!collapsed && (
+          <div className="mt-2">
+            {isAddingCompany ? (
+              <div
+                className="rounded-md px-3 py-2"
+                style={{ backgroundColor: 'var(--pw-bg-tertiary)', border: '1px solid var(--pw-border)' }}
+              >
+                <input
+                  ref={addInputRef}
+                  value={newCompanyName}
+                  onChange={(e) => setNewCompanyName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleConfirmAdd();
+                    if (e.key === 'Escape') handleCancelAdd();
                   }}
-                >
-                  Skapa
-                </button>
-                <button
-                  onClick={handleCancelAdd}
-                  className="text-xs"
-                  style={{ color: 'var(--pw-text-tertiary)' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--pw-text-secondary)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--pw-text-tertiary)')}
-                >
-                  Avbryt
-                </button>
+                  placeholder="Moderbolagsnamn…"
+                  className="bg-transparent outline-none w-full text-sm mb-2"
+                  style={{ color: 'var(--pw-text-primary)', caretColor: 'var(--pw-primary)', display: 'block' }}
+                  onFocus={(e) => (e.currentTarget.parentElement!.style.borderColor = 'var(--pw-accent-red)')}
+                  onBlur={(e) => (e.currentTarget.parentElement!.style.borderColor = 'var(--pw-border)')}
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleConfirmAdd}
+                    disabled={!newCompanyName.trim()}
+                    className="text-xs px-2 py-0.5 rounded"
+                    style={{
+                      border: `1px solid ${newCompanyName.trim() ? 'var(--pw-accent-red)' : 'var(--pw-border)'}`,
+                      color: newCompanyName.trim() ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)',
+                      opacity: newCompanyName.trim() ? 1 : 0.5,
+                      cursor: newCompanyName.trim() ? 'pointer' : 'default',
+                      backgroundColor: 'transparent',
+                    }}
+                  >
+                    Skapa
+                  </button>
+                  <button
+                    onClick={handleCancelAdd}
+                    className="text-xs"
+                    style={{ color: 'var(--pw-text-tertiary)' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--pw-text-secondary)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--pw-text-tertiary)')}
+                  >
+                    Avbryt
+                  </button>
+                </div>
               </div>
-            </div>
-          ) : (
+            ) : (
+              <button
+                onClick={() => setIsAddingCompany(true)}
+                className="w-full flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors"
+                style={{
+                  color: 'var(--pw-text-tertiary)',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)';
+                  e.currentTarget.style.color = 'var(--pw-text-secondary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = 'var(--pw-text-tertiary)';
+                }}
+              >
+                <Plus size={12} style={{ flexShrink: 0 }} />
+                <span>Lägg till moderbolag</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {collapsed && (
+          <NavTooltip label="Lägg till moderbolag" collapsed={true}>
             <button
-              onClick={() => setIsAddingCompany(true)}
-              className="w-full flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition-colors"
+              onClick={() => { setCollapsed(false); localStorage.setItem('sidebarCollapsed', 'false'); setIsAddingCompany(true); }}
               style={{
-                color: 'var(--pw-text-tertiary)',
-                backgroundColor: 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+                padding: '6px',
+                borderRadius: '6px',
+                background: 'none',
                 border: 'none',
+                cursor: 'pointer',
+                color: 'var(--pw-text-tertiary)',
+                marginTop: '4px',
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)';
-                e.currentTarget.style.color = 'var(--pw-text-secondary)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'var(--pw-text-tertiary)';
-              }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; e.currentTarget.style.color = 'var(--pw-text-secondary)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--pw-text-tertiary)'; }}
             >
-              <Plus size={12} style={{ flexShrink: 0 }} />
-              <span>Lägg till moderbolag</span>
+              <Plus size={14} />
             </button>
-          )}
-        </div>
+          </NavTooltip>
+        )}
       </div>
 
-      <div className="px-3 pb-3">
-        <div
-          className="flex items-center gap-2 rounded-md px-3 py-2"
-          style={{ backgroundColor: 'var(--pw-bg-tertiary)' }}
-        >
-          <Search size={13} style={{ color: 'var(--pw-text-tertiary)', flexShrink: 0 }} />
-          <input
-            type="text"
-            value={searchValue}
-            placeholder="Sök moderbolag…"
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="bg-transparent outline-none w-full text-sm"
-            style={{ color: 'var(--pw-text-primary)', caretColor: 'var(--pw-primary)' }}
-          />
+      {!collapsed && (
+        <div className="px-3 pb-3">
+          <div
+            className="flex items-center gap-2 rounded-md px-3 py-2"
+            style={{ backgroundColor: 'var(--pw-bg-tertiary)' }}
+          >
+            <Search size={13} style={{ color: 'var(--pw-text-tertiary)', flexShrink: 0 }} />
+            <input
+              type="text"
+              value={searchValue}
+              placeholder="Sök moderbolag…"
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="bg-transparent outline-none w-full text-sm"
+              style={{ color: 'var(--pw-text-primary)', caretColor: 'var(--pw-primary)' }}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
-      <nav className="flex-1 px-2 overflow-y-auto">
-        {filtered.length === 0 ? (
+      <nav className="flex-1 overflow-y-auto" style={{ padding: collapsed ? '0 4px' : '0 8px' }}>
+        {!collapsed && filtered.length === 0 && (
           <p className="px-3 py-2 text-xs" style={{ color: 'var(--pw-text-tertiary)' }}>
             Inga träffar
           </p>
-        ) : (
+        )}
+        {(!collapsed || true) && (
           <>
             {favoriteIds.length > 0 && (
               <div className="mb-1">
-                <p className="px-3 pb-0.5 pt-1 text-xs uppercase tracking-wide" style={{ color: 'var(--pw-text-tertiary)' }}>
-                  Favoriter
-                </p>
+                {!collapsed && (
+                  <p className="px-3 pb-0.5 pt-1 text-xs uppercase tracking-wide" style={{ color: 'var(--pw-text-tertiary)' }}>
+                    Favoriter
+                  </p>
+                )}
                 {favoriteIds.map(renderRow)}
               </div>
             )}
             {otherIds.length > 0 && (
               <div>
-                {favoriteIds.length > 0 && (
+                {!collapsed && favoriteIds.length > 0 && (
                   <p className="px-3 pb-0.5 pt-2 text-xs uppercase tracking-wide" style={{ color: 'var(--pw-text-tertiary)' }}>
                     Övriga
                   </p>
@@ -391,6 +533,43 @@ const WorkspaceSidebar = ({
           </>
         )}
       </nav>
+
+      <button
+        onClick={toggleCollapsed}
+        aria-label={collapsed ? 'Expandera sidopanel' : 'Kollapsa sidopanel'}
+        style={{
+          position: 'absolute',
+          right: '-1px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          zIndex: 10,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '16px',
+          height: '32px',
+          borderRadius: '0 4px 4px 0',
+          backgroundColor: 'var(--pw-bg-secondary)',
+          border: '1px solid var(--pw-border)',
+          borderLeft: 'none',
+          cursor: 'pointer',
+          color: 'var(--pw-text-tertiary)',
+          transition: 'color 0.15s, background-color 0.15s',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = 'var(--pw-text-secondary)';
+          e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = 'var(--pw-text-tertiary)';
+          e.currentTarget.style.backgroundColor = 'var(--pw-bg-secondary)';
+        }}
+      >
+        {collapsed
+          ? <ChevronRight size={10} strokeWidth={2} />
+          : <ChevronLeft size={10} strokeWidth={2} />
+        }
+      </button>
     </aside>
   );
 };
