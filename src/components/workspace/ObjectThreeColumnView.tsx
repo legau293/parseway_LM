@@ -515,42 +515,63 @@ function RightColumn({ activeSectionKey }: { activeSectionKey: string | null }) 
   );
 }
 
+const BUILDING_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+function nextBuildingName(existing: { name: string }[]): string {
+  for (const letter of BUILDING_LETTERS) {
+    const candidate = `Byggnad ${letter}`;
+    if (!existing.some((b) => b.name === candidate)) return candidate;
+  }
+  return `Byggnad ${existing.length + 1}`;
+}
+
+function cloneParamsEmpty(template: ObjectParameter[]): ObjectParameter[] {
+  return template.map((p) => ({
+    ...p,
+    id: `${p.id}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    value: '',
+    status: 'missing' as const,
+    reference: undefined,
+  }));
+}
+
 const ObjectThreeColumnView = ({ object, onUpdateParameter }: Props) => {
   const isFastighet = object.objectType === 'Fastighet';
 
-  const normalizedBuildings = React.useMemo(() => {
+  const [buildings, setBuildings] = useState<Building[]>(() => {
     if (!isFastighet) return [];
     if (object.buildings && object.buildings.length > 0) return object.buildings;
-    return [{ id: `${object.id}-default`, name: object.name, parameters: object.parameters ?? [] }];
-  }, [object.id, object.objectType, object.buildings, object.parameters]);
+    return [{ id: `${object.id}-default`, name: 'Byggnad A', parameters: object.parameters ?? [] }];
+  });
 
-  const showSwitcher = isFastighet && normalizedBuildings.length >= 2;
-
-  const [activeBuildingId, setActiveBuildingId] = useState<string>(() => normalizedBuildings[0]?.id ?? '');
+  const [activeBuildingId, setActiveBuildingId] = useState<string>(() => buildings[0]?.id ?? '');
   const [selectedParamId, setSelectedParamId] = useState<string | null>(null);
   const [activeSectionKey, setActiveSectionKey] = useState<string | null>(null);
 
-  const activeBuilding = isFastighet
-    ? (normalizedBuildings.find((b) => b.id === activeBuildingId) ?? normalizedBuildings[0])
-    : null;
-  const params = isFastighet ? (activeBuilding?.parameters ?? []) : (object.parameters ?? []);
-
   useEffect(() => {
-    const firstId = normalizedBuildings[0]?.id ?? '';
+    const fresh = (() => {
+      if (!isFastighet) return [];
+      if (object.buildings && object.buildings.length > 0) return object.buildings;
+      return [{ id: `${object.id}-default`, name: 'Byggnad A', parameters: object.parameters ?? [] }];
+    })();
+    setBuildings(fresh);
+    const firstId = fresh[0]?.id ?? '';
     setActiveBuildingId(firstId);
-    setSelectedParamId(params[0]?.id ?? null);
+    setSelectedParamId(fresh[0]?.parameters[0]?.id ?? null);
     setActiveSectionKey(null);
     console.log('[BuildingSwitcher] object.id:', object.id, '| objectType:', object.objectType, '| buildings.length:', object.buildings?.length ?? 0);
   }, [object.id]);
 
   useEffect(() => {
-    const newParams = isFastighet
-      ? (normalizedBuildings.find((b) => b.id === activeBuildingId)?.parameters ?? [])
-      : (object.parameters ?? []);
-    setSelectedParamId(newParams[0]?.id ?? null);
+    const b = buildings.find((b) => b.id === activeBuildingId) ?? buildings[0];
+    setSelectedParamId(b?.parameters[0]?.id ?? null);
     setActiveSectionKey(null);
   }, [activeBuildingId]);
 
+  const activeBuilding = isFastighet
+    ? (buildings.find((b) => b.id === activeBuildingId) ?? buildings[0])
+    : null;
+  const params = isFastighet ? (activeBuilding?.parameters ?? []) : (object.parameters ?? []);
   const selectedParam = params.find((p) => p.id === selectedParamId) ?? null;
 
   const getBuildingProgress = (b: { parameters: { status: string }[] }) => {
@@ -560,7 +581,18 @@ const ObjectThreeColumnView = ({ object, onUpdateParameter }: Props) => {
     return Math.round((verified / total) * 100);
   };
 
-  if (params.length === 0) {
+  const handleAddBuilding = () => {
+    const template = buildings[0]?.parameters ?? object.parameters ?? [];
+    const newBuilding: Building = {
+      id: `${object.id}-building-${Date.now()}`,
+      name: nextBuildingName(buildings),
+      parameters: cloneParamsEmpty(template),
+    };
+    setBuildings((prev) => [...prev, newBuilding]);
+    setActiveBuildingId(newBuilding.id);
+  };
+
+  if (!isFastighet && (object.parameters ?? []).length === 0) {
     return (
       <div
         style={{
@@ -577,12 +609,13 @@ const ObjectThreeColumnView = ({ object, onUpdateParameter }: Props) => {
     );
   }
 
-  const switcherNode = showSwitcher ? (
+  const switcherNode = isFastighet ? (
     <BuildingSwitcher
-      buildings={normalizedBuildings}
+      buildings={buildings}
       activeBuildingId={activeBuildingId}
       onSelect={setActiveBuildingId}
       getProgress={getBuildingProgress}
+      onAddBuilding={handleAddBuilding}
     />
   ) : undefined;
 
