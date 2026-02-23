@@ -48,8 +48,17 @@ export function exportXLSX(
       }
     }
 
+    const isByggnadsType = type === 'Byggnad' || type === 'Fastighet';
+    const getColHeader = (obj: InsuranceObject) => {
+      if (isByggnadsType) {
+        const fb = obj.parameters?.find((p) => p.id === 'fastighetsbeteckning');
+        if (fb?.value) return fb.value;
+      }
+      return obj.name;
+    };
+
     const paramEntries = Array.from(allParamIds.entries());
-    const headerRow = ['Parameter', ...objects.map((o) => o.name)];
+    const headerRow = ['Parameter', ...objects.map((o) => getColHeader(o))];
     const rows: (string | number)[][] = [headerRow];
 
     for (const [paramId, paramLabel] of paramEntries) {

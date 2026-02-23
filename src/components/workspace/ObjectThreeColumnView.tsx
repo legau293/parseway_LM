@@ -102,18 +102,38 @@ function ParameterRow({
     >
       <StatusDot status={param.status} />
 
-      <span
+      <div
         style={{
-          fontSize: '12px',
-          color: 'var(--pw-text-tertiary)',
           minWidth: '130px',
           flexShrink: 0,
           paddingTop: '1px',
           userSelect: 'none',
         }}
       >
-        {param.label}
-      </span>
+        <span
+          style={{
+            fontSize: '12px',
+            color: 'var(--pw-text-tertiary)',
+            display: 'block',
+          }}
+        >
+          {param.label}
+        </span>
+        {param.helpText && (
+          <span
+            style={{
+              fontSize: '10px',
+              color: 'var(--pw-text-tertiary)',
+              opacity: 0.7,
+              display: 'block',
+              marginTop: '1px',
+              lineHeight: 1.3,
+            }}
+          >
+            {param.helpText}
+          </span>
+        )}
+      </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
         {editing ? (
@@ -180,6 +200,25 @@ function ParameterRow({
   );
 }
 
+function groupParamsBySection(params: ObjectParameter[]): { section: string | null; items: ObjectParameter[] }[] {
+  const groups: { section: string | null; items: ObjectParameter[] }[] = [];
+  let currentSection: string | null = null;
+  let currentItems: ObjectParameter[] = [];
+
+  for (const p of params) {
+    const sec = p.section ?? null;
+    if (sec !== currentSection) {
+      if (currentItems.length > 0) groups.push({ section: currentSection, items: currentItems });
+      currentSection = sec;
+      currentItems = [p];
+    } else {
+      currentItems.push(p);
+    }
+  }
+  if (currentItems.length > 0) groups.push({ section: currentSection, items: currentItems });
+  return groups;
+}
+
 function LeftColumn({
   params,
   selectedParamId,
@@ -195,6 +234,8 @@ function LeftColumn({
   const total = params.length;
   const pct = total === 0 ? 0 : Math.round((verifiedCount / total) * 100);
   const allDone = pct === 100;
+  const groups = groupParamsBySection(params);
+  const hasSections = params.some((p) => p.section);
 
   return (
     <div
@@ -238,15 +279,43 @@ function LeftColumn({
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', paddingTop: '4px', paddingBottom: '8px' }}>
-        {params.map((p) => (
-          <ParameterRow
-            key={p.id}
-            param={p}
-            isSelected={selectedParamId === p.id}
-            onSelect={() => onSelectParam(p.id)}
-            onUpdate={(patch) => onUpdateParam(p.id, patch)}
-          />
-        ))}
+        {hasSections
+          ? groups.map((group, gi) => (
+              <React.Fragment key={group.section ?? gi}>
+                {group.section && (
+                  <div
+                    style={{
+                      padding: gi === 0 ? '8px 16px 4px' : '12px 16px 4px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: 'var(--pw-text-secondary)',
+                      letterSpacing: '0.03em',
+                      userSelect: 'none',
+                    }}
+                  >
+                    {group.section}
+                  </div>
+                )}
+                {group.items.map((p) => (
+                  <ParameterRow
+                    key={p.id}
+                    param={p}
+                    isSelected={selectedParamId === p.id}
+                    onSelect={() => onSelectParam(p.id)}
+                    onUpdate={(patch) => onUpdateParam(p.id, patch)}
+                  />
+                ))}
+              </React.Fragment>
+            ))
+          : params.map((p) => (
+              <ParameterRow
+                key={p.id}
+                param={p}
+                isSelected={selectedParamId === p.id}
+                onSelect={() => onSelectParam(p.id)}
+                onUpdate={(patch) => onUpdateParam(p.id, patch)}
+              />
+            ))}
       </div>
     </div>
   );

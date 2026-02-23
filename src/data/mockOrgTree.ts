@@ -13,6 +13,8 @@ export interface ObjectParameter {
   value: string;
   status: ParameterStatus;
   reference?: ParameterReference;
+  section?: string;
+  helpText?: string;
 }
 
 export interface InsuranceObject {
@@ -42,39 +44,63 @@ export interface RootCompany {
 
 export type OrgTree = Record<string, RootCompany>;
 
+const byggnadParams = (): ObjectParameter[] => [
+  { id: 'bolagsnamn', label: 'Bolagsnamn', value: '', status: 'missing', section: 'Fastighetslista' },
+  { id: 'org-nr', label: 'Org nr', value: '', status: 'missing', section: 'Fastighetslista' },
+  { id: 'hyresintakter-foregaende-ar', label: 'Hyresintäkter förgående år:', value: '', status: 'missing', section: 'Fastighetslista' },
+  { id: 'fastighetens-adress', label: 'Fastighetens adress', value: '', status: 'missing', section: 'Fastighetslista' },
+  { id: 'fastighetsbeteckning', label: 'Fastighetsbeteckning', value: '', status: 'missing', section: 'Fastighetslista' },
+  { id: 'hustyp-typkod', label: 'Hustyp/Typkod', value: '', status: 'missing', section: 'Fastighetslista' },
+  { id: 'antal-byggnader', label: 'Antal byggnader', value: '', status: 'missing', section: 'Fastighetslista' },
+
+  { id: 'antal-brf-lagenheter', label: 'Antal brf-lägenheter', value: '', status: 'missing', section: 'Fastighet' },
+  { id: 'antal-hyreslägenheter', label: 'Antal hyreslägenheter', value: '', status: 'missing', section: 'Fastighet' },
+  { id: 'antal-kommersiella-hyresgaster', label: 'Antal kommersiella hyresgäster', value: '', status: 'missing', section: 'Fastighet' },
+  { id: 'byggnadsår', label: 'Byggnadsår', value: '', status: 'missing', section: 'Fastighet' },
+  { id: 'stambyte-el', label: 'Stambyte av EL, år:', value: '', status: 'missing', section: 'Fastighet' },
+  { id: 'stambyte-va', label: 'Stambyte av VA (ej relining), år:', value: '', status: 'missing', section: 'Fastighet' },
+  { id: 'vaningar-ovan-mark', label: 'Våningar ovan mark (ink markplan)', value: '', status: 'missing', section: 'Fastighet' },
+  { id: 'entresol-kvm', label: 'Entresol kvm', value: '', status: 'missing', section: 'Fastighet' },
+  { id: 'vaningar-under-mark', label: 'Våningar under mark', value: '', status: 'missing', section: 'Fastighet' },
+
+  { id: 'fasad', label: 'Fasad', value: '', status: 'missing', section: 'Material' },
+  { id: 'stomme', label: 'Stomme', value: '', status: 'missing', section: 'Material' },
+  { id: 'tak', label: 'Tak', value: '', status: 'missing', section: 'Material' },
+  { id: 'bjalklag', label: 'Bjälklag (mellanbotten)', value: '', status: 'missing', section: 'Material' },
+  { id: 'grund', label: 'Grund', value: '', status: 'missing', section: 'Material' },
+  { id: 'isolering', label: 'Isolering (ex. cellplast)', value: '', status: 'missing', section: 'Material' },
+  { id: 'bkl', label: 'BKL', value: '', status: 'missing', section: 'Material' },
+
+  { id: 'loa', label: 'LOA, lokalyta', value: '', status: 'missing', section: 'Ytor' },
+  { id: 'varav-kontor', label: 'Varav Kontor m2', value: '', status: 'missing', section: 'Ytor' },
+  { id: 'varav-lager', label: 'Varav Lager m2', value: '', status: 'missing', section: 'Ytor' },
+  { id: 'varav-industri', label: 'Varav industri m2', value: '', status: 'missing', section: 'Ytor' },
+  { id: 'varav-restaurang', label: 'Varav Restaurang m2', value: '', status: 'missing', section: 'Ytor' },
+  { id: 'källaryta', label: 'Källaryta', value: '', status: 'missing', section: 'Ytor' },
+  { id: 'källaryta-garage', label: 'Källaryta varav garage', value: '', status: 'missing', section: 'Ytor' },
+  { id: 'komplementbyggnad', label: 'Komplementbyggnad', value: '', status: 'missing', section: 'Ytor', helpText: 'Tex. Miljöhus, 45 kvm & träbyggnad.' },
+  { id: 'bta', label: 'BTA, bruttoarea', value: '', status: 'missing', section: 'Ytor' },
+  { id: 'bya', label: 'BYA, byggnadsarea', value: '', status: 'missing', section: 'Ytor' },
+
+  { id: 'inbrottslarm', label: 'Inbrottslarm direktkoppling SOS', value: '', status: 'missing', section: 'Övrigt' },
+  { id: 'brandlarm', label: 'Brandlarm direktkoppling SOS', value: '', status: 'missing', section: 'Övrigt' },
+  { id: 'sprinkler', label: 'Sprinkler', value: '', status: 'missing', section: 'Övrigt' },
+  { id: 'värde-sprinklertank', label: 'Värde sprinklertank & system', value: '', status: 'missing', section: 'Övrigt' },
+  { id: 'momspliktig', label: 'Momspliktig %', value: '', status: 'missing', section: 'Övrigt', helpText: 'Vid kommersiella lokaler' },
+  { id: 'solceller', label: 'Solceller', value: '', status: 'missing', section: 'Övrigt', helpText: 'Värde installation + egendom' },
+  { id: 'värde-batteri-system', label: 'Värde Batteri & System', value: '', status: 'missing', section: 'Övrigt', helpText: '(el-lagring fr solceller)' },
+  { id: 'laddstolpar', label: 'Laddstolpar', value: '', status: 'missing', section: 'Övrigt', helpText: 'Värde installation + egendom' },
+
+  { id: 'bilaga-trepartsbesiktning', label: 'Bilaga - Trepartsbesiktning intyg', value: '', status: 'missing', section: 'Dokument', helpText: 'Vid solceller' },
+  { id: 'bilaga-brandskyddsdokumentation', label: 'Bilaga - Brandskyddsdokumentation', value: '', status: 'missing', section: 'Dokument' },
+  { id: 'bilaga-revisionsintyg', label: 'Bilaga - Revisionsintyg', value: '', status: 'missing', section: 'Dokument' },
+  { id: 'bilaga-anlaggningsintyg', label: 'Bilaga - Anläggningsintyg', value: '', status: 'missing', section: 'Dokument', helpText: 'Vid direktkopplade larm eller sprinkler' },
+  { id: 'bilaga-brandcellsindelning', label: 'Bilaga - Brandcellsindelning', value: '', status: 'missing', section: 'Dokument' },
+  { id: 'ovrig-kommentar', label: 'Övrig kommentar / upplysning:', value: '', status: 'missing', section: 'Dokument' },
+];
+
 const fastighetParams = (overrides: Partial<ObjectParameter>[] = []): ObjectParameter[] => {
-  const base: ObjectParameter[] = [
-    {
-      id: 'byggår', label: 'Byggår', value: '1998', status: 'verified',
-      reference: { filename: 'Fastighetsdokumentation_2023.pdf', section: 'Avsnitt 2 – Byggnadsbeskrivning', excerpt: 'Byggnaden uppfördes år 1998 och genomgick en större renovering 2012.', pageHint: 4 },
-    },
-    {
-      id: 'area', label: 'Area (m²)', value: '8 400', status: 'verified',
-      reference: { filename: 'Fastighetsdokumentation_2023.pdf', section: 'Avsnitt 3 – Ytor och volymer', excerpt: 'Total bruttoarea uppgår till 8 400 m² fördelat på fyra plan.', pageHint: 6 },
-    },
-    {
-      id: 'adress', label: 'Adress', value: 'Torslandavägen 12, 418 34 Göteborg', status: 'ai',
-      reference: { filename: 'Taxeringsutdrag_2024.pdf', section: 'Fastighetsuppgifter', excerpt: 'Registrerad adress: Torslandavägen 12, 418 34 Göteborg.', pageHint: 1 },
-    },
-    {
-      id: 'fastighetsbeteckning', label: 'Fastighetsbeteckning', value: 'Torslanda 3:12', status: 'verified',
-      reference: { filename: 'Taxeringsutdrag_2024.pdf', section: 'Fastighetsbeteckning', excerpt: 'Beteckning: Torslanda 3:12. Registrerat i Lantmäteriets fastighetsregister.', pageHint: 1 },
-    },
-    {
-      id: 'hyresintäkt', label: 'Hyresintäkt (kr/år)', value: '12 600 000', status: 'ai',
-      reference: { filename: 'Hyresavtal_2024.pdf', section: 'Ekonomisk sammanfattning', excerpt: 'Totala hyresintäkter för innevarande år uppgår till 12 600 000 kr.', pageHint: 3 },
-    },
-    {
-      id: 'byggnadsklass', label: 'Byggnadsklass', value: 'Kontorsbyggnad klass B', status: 'verified',
-      reference: { filename: 'Fastighetsdokumentation_2023.pdf', section: 'Avsnitt 1 – Klassificering', excerpt: 'Byggnaden klassificeras som kontorsbyggnad klass B enligt Boverkets indelning.', pageHint: 2 },
-    },
-    {
-      id: 'ägare', label: 'Ägare', value: '', status: 'missing' },
-    {
-      id: 'taxeringsvärde', label: 'Taxeringsvärde (kr)', value: '78 000 000', status: 'ai',
-      reference: { filename: 'Taxeringsutdrag_2024.pdf', section: 'Taxeringsvärde', excerpt: 'Aktuellt taxeringsvärde: 78 000 000 kr (2024 års taxering).', pageHint: 2 },
-    },
-  ];
+  const base = byggnadParams();
   overrides.forEach((o, i) => {
     if (base[i]) Object.assign(base[i], o);
   });
