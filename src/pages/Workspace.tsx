@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Search, Plus, Trash2, ChevronDown, ChevronRight, Filter } from 'lucide-react';
+import { Search, Plus, Trash2, ChevronDown, ChevronRight, Filter, FileSpreadsheet, FileDown } from 'lucide-react';
 import { SortColumn, SortDirection } from '@/components/workspace/ObjectRow';
+import { exportXLSX, exportPDF } from '@/utils/exportUtils';
 import { useLogout } from '@/services/authService';
 import WorkspaceShell from '@/components/workspace/WorkspaceShell';
 import WorkspaceSidebar from '@/components/workspace/WorkspaceSidebar';
@@ -239,11 +240,16 @@ interface SectionHeaderProps {
   filterActive?: boolean;
   panelContent: React.ReactNode;
   toolbarRef: React.RefObject<HTMLDivElement>;
+  showExport?: boolean;
+  exportDisabled?: boolean;
+  onExportXLSX?: () => void;
+  onExportPDF?: () => void;
 }
 
 function SectionHeader({
   title, count, isOpen, onToggleOpen, panel, onPanelToggle,
   showDelete, deleteDisabled, showFilter, filterActive, panelContent, toolbarRef,
+  showExport, exportDisabled, onExportXLSX, onExportPDF,
 }: SectionHeaderProps) {
   const hasDeleteSelection = showDelete && !deleteDisabled;
   const deleteColor = hasDeleteSelection ? '#E5483F' : 'var(--pw-text-tertiary)';
@@ -315,6 +321,31 @@ function SectionHeader({
         >
           <Filter size={13} />
         </button>
+      )}
+
+      {showExport && (
+        <>
+          <button
+            onClick={() => !exportDisabled && onExportXLSX?.()}
+            disabled={exportDisabled}
+            title="Exportera till Excel"
+            style={{ ...iBtn, color: 'var(--pw-text-tertiary)', opacity: exportDisabled ? 0.3 : 1, cursor: exportDisabled ? 'default' : 'pointer' }}
+            onMouseEnter={(e) => { if (!exportDisabled) { e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; e.currentTarget.style.color = 'var(--pw-text-primary)'; } }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--pw-text-tertiary)'; }}
+          >
+            <FileSpreadsheet size={13} />
+          </button>
+          <button
+            onClick={() => !exportDisabled && onExportPDF?.()}
+            disabled={exportDisabled}
+            title="Exportera till PDF"
+            style={{ ...iBtn, color: 'var(--pw-text-tertiary)', opacity: exportDisabled ? 0.3 : 1, cursor: exportDisabled ? 'default' : 'pointer' }}
+            onMouseEnter={(e) => { if (!exportDisabled) { e.currentTarget.style.backgroundColor = 'var(--pw-bg-tertiary)'; e.currentTarget.style.color = 'var(--pw-text-primary)'; } }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--pw-text-tertiary)'; }}
+          >
+            <FileDown size={13} />
+          </button>
+        </>
       )}
 
       {panel !== null && panelContent && (
@@ -542,6 +573,22 @@ const Workspace = () => {
     showToast(`${count === 1 ? 'Försäkringsobjektet' : `${count} försäkringsobjekt`} borttaget`);
   };
 
+  const getExportContextName = () => {
+    if (selectedSubsidiary) return selectedSubsidiary.name;
+    if (rootCompany) return rootCompany.name;
+    return '';
+  };
+
+  const handleExportXLSX = () => {
+    if (selectedObjectIds.size === 0) return;
+    exportXLSX(currentObjects, selectedObjectIds, `${getExportContextName()}_forsäkringsobjekt.xlsx`);
+  };
+
+  const handleExportPDF = () => {
+    if (selectedObjectIds.size === 0) return;
+    exportPDF(currentObjects, selectedObjectIds, getExportContextName());
+  };
+
   const handleAddObject = () => {
     if (!selectedRootId || !objAddForm.name.trim()) return;
     addInsuranceObject(selectedRootId, selectedSubsidiaryId, {
@@ -715,6 +762,10 @@ const Workspace = () => {
             deleteDisabled={selectedObjectIds.size === 0}
             showFilter={true}
             filterActive={objTypeFilter !== 'Alla'}
+            showExport={true}
+            exportDisabled={selectedObjectIds.size === 0}
+            onExportXLSX={handleExportXLSX}
+            onExportPDF={handleExportPDF}
             toolbarRef={objToolbarRef}
             panelContent={
               <ObjInlinePanel
@@ -799,6 +850,10 @@ const Workspace = () => {
             deleteDisabled={selectedObjectIds.size === 0}
             showFilter={true}
             filterActive={objTypeFilter !== 'Alla'}
+            showExport={true}
+            exportDisabled={selectedObjectIds.size === 0}
+            onExportXLSX={handleExportXLSX}
+            onExportPDF={handleExportPDF}
             toolbarRef={objToolbarRef}
             panelContent={
               <ObjInlinePanel
