@@ -516,25 +516,38 @@ function RightColumn({ activeSectionKey }: { activeSectionKey: string | null }) 
 }
 
 const ObjectThreeColumnView = ({ object, onUpdateParameter }: Props) => {
-  const buildings = object.buildings ?? [];
-  const hasBuildings = buildings.length > 0;
+  const isFastighet = object.objectType === 'Fastighet';
 
-  const [activeBuildingId, setActiveBuildingId] = useState<string>(() => buildings[0]?.id ?? '');
+  const normalizedBuildings = React.useMemo(() => {
+    if (!isFastighet) return [];
+    if (object.buildings && object.buildings.length > 0) return object.buildings;
+    return [{ id: `${object.id}-default`, name: object.name, parameters: object.parameters ?? [] }];
+  }, [object.id, object.objectType, object.buildings, object.parameters]);
+
+  const showSwitcher = isFastighet && normalizedBuildings.length >= 2;
+
+  const [activeBuildingId, setActiveBuildingId] = useState<string>(() => normalizedBuildings[0]?.id ?? '');
   const [selectedParamId, setSelectedParamId] = useState<string | null>(null);
   const [activeSectionKey, setActiveSectionKey] = useState<string | null>(null);
 
-  const activeBuilding = hasBuildings ? buildings.find((b) => b.id === activeBuildingId) ?? buildings[0] : null;
-  const params = hasBuildings ? (activeBuilding?.parameters ?? []) : (object.parameters ?? []);
+  const activeBuilding = isFastighet
+    ? (normalizedBuildings.find((b) => b.id === activeBuildingId) ?? normalizedBuildings[0])
+    : null;
+  const params = isFastighet ? (activeBuilding?.parameters ?? []) : (object.parameters ?? []);
 
   useEffect(() => {
-    const firstBuilding = buildings[0];
-    setActiveBuildingId(firstBuilding?.id ?? '');
-    setSelectedParamId(null);
+    const firstId = normalizedBuildings[0]?.id ?? '';
+    setActiveBuildingId(firstId);
+    setSelectedParamId(params[0]?.id ?? null);
     setActiveSectionKey(null);
+    console.log('[BuildingSwitcher] object.id:', object.id, '| objectType:', object.objectType, '| buildings.length:', object.buildings?.length ?? 0);
   }, [object.id]);
 
   useEffect(() => {
-    setSelectedParamId(params[0]?.id ?? null);
+    const newParams = isFastighet
+      ? (normalizedBuildings.find((b) => b.id === activeBuildingId)?.parameters ?? [])
+      : (object.parameters ?? []);
+    setSelectedParamId(newParams[0]?.id ?? null);
     setActiveSectionKey(null);
   }, [activeBuildingId]);
 
@@ -545,14 +558,6 @@ const ObjectThreeColumnView = ({ object, onUpdateParameter }: Props) => {
     if (total === 0) return 0;
     const verified = b.parameters.filter((p) => p.status === 'verified').length;
     return Math.round((verified / total) * 100);
-  };
-
-  const handleSelectSection = (key: string | null) => {
-    setActiveSectionKey(key);
-  };
-
-  const handleSwitchBuilding = (id: string) => {
-    setActiveBuildingId(id);
   };
 
   if (params.length === 0) {
@@ -572,11 +577,11 @@ const ObjectThreeColumnView = ({ object, onUpdateParameter }: Props) => {
     );
   }
 
-  const switcherNode = hasBuildings ? (
+  const switcherNode = showSwitcher ? (
     <BuildingSwitcher
-      buildings={buildings}
+      buildings={normalizedBuildings}
       activeBuildingId={activeBuildingId}
-      onSelect={handleSwitchBuilding}
+      onSelect={setActiveBuildingId}
       getProgress={getBuildingProgress}
     />
   ) : undefined;
@@ -605,7 +610,7 @@ const ObjectThreeColumnView = ({ object, onUpdateParameter }: Props) => {
       />
       <MiddleColumn
         param={selectedParam}
-        onSelectSection={handleSelectSection}
+        onSelectSection={(key) => setActiveSectionKey(key)}
         activeSectionKey={activeSectionKey}
       />
       <RightColumn activeSectionKey={activeSectionKey} />

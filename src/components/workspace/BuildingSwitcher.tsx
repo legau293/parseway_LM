@@ -1,6 +1,5 @@
 import React from 'react';
 import { Building } from '@/data/mockOrgTree';
-import { Plus } from 'lucide-react';
 
 interface BuildingSwitcherProps {
   buildings: Building[];
