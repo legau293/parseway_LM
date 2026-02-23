@@ -29,12 +29,12 @@ function StatusDot({ status }: { status: ParameterStatus }) {
       title={title}
       style={{
         display: 'inline-block',
-        width: '8px',
-        height: '8px',
+        width: '7px',
+        height: '7px',
         borderRadius: '50%',
         backgroundColor: bg,
         flexShrink: 0,
-        marginTop: '1px',
+        alignSelf: 'center',
       }}
     />
   );
@@ -89,9 +89,9 @@ function ParameterRow({
       onClick={() => { onSelect(); }}
       style={{
         display: 'flex',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         gap: '8px',
-        padding: '6px 16px',
+        padding: '4px 16px',
         cursor: 'pointer',
         backgroundColor: isSelected ? 'var(--pw-bg-tertiary)' : 'transparent',
         borderLeft: isSelected ? `2px solid ${TEAL}` : '2px solid transparent',
@@ -106,13 +106,13 @@ function ParameterRow({
         style={{
           minWidth: '130px',
           flexShrink: 0,
-          paddingTop: '1px',
           userSelect: 'none',
         }}
       >
         <span
           style={{
-            fontSize: '12px',
+            fontSize: '11px',
+            lineHeight: 1.25,
             color: 'var(--pw-text-tertiary)',
             display: 'block',
           }}
@@ -127,7 +127,7 @@ function ParameterRow({
               opacity: 0.7,
               display: 'block',
               marginTop: '1px',
-              lineHeight: 1.3,
+              lineHeight: 1.25,
             }}
           >
             {param.helpText}
@@ -159,7 +159,8 @@ function ParameterRow({
           <span
             onDoubleClick={(e) => { e.stopPropagation(); setEditing(true); setDraft(param.value); }}
             style={{
-              fontSize: '12px',
+              fontSize: '11px',
+              lineHeight: 1.25,
               color: param.value ? 'var(--pw-text-primary)' : 'var(--pw-text-tertiary)',
               display: 'block',
               wordBreak: 'break-word',
@@ -279,18 +280,19 @@ function LeftColumn({
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', paddingTop: '4px', paddingBottom: '8px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingTop: '2px', paddingBottom: '4px' }}>
         {hasSections
           ? groups.map((group, gi) => (
               <React.Fragment key={group.section ?? gi}>
                 {group.section && (
                   <div
                     style={{
-                      padding: gi === 0 ? '8px 16px 4px' : '12px 16px 4px',
-                      fontSize: '11px',
+                      padding: gi === 0 ? '6px 16px 2px' : '8px 16px 2px',
+                      fontSize: '10px',
                       fontWeight: 600,
                       color: 'var(--pw-text-secondary)',
-                      letterSpacing: '0.03em',
+                      letterSpacing: '0.04em',
+                      textTransform: 'uppercase',
                       userSelect: 'none',
                     }}
                   >
@@ -550,8 +552,8 @@ const ObjectThreeColumnView = ({ object, onUpdateParameter }: Props) => {
         backgroundColor: 'var(--pw-bg-primary)',
         display: 'grid',
         gridTemplateColumns: '1.5fr 0.8fr 1.1fr',
-        minHeight: '380px',
-        maxHeight: 'calc(100vh - 120px)',
+        height: 'calc(100vh - 120px)',
+        overflow: 'hidden',
       }}
     >
       <LeftColumn
