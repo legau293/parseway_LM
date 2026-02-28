@@ -243,6 +243,7 @@ interface ObjectListViewProps {
   selectedObjectIds?: Set<string>;
   onToggleObject: (id: string) => void;
   onToggleObjectSelect?: (id: string) => void;
+  onSelectAll?: () => void;
   onUpdateObject: (id: string, patch: Partial<Pick<InsuranceObject, 'name' | 'objectType' | 'description'>>) => void;
   onVerifyField: (objId: string) => void;
   onUpdateParameter?: (objId: string, paramId: string, patch: { value?: string; status?: ParameterStatus }) => void;
@@ -260,6 +261,7 @@ const ObjectListView = ({
   selectedObjectIds,
   onToggleObject,
   onToggleObjectSelect,
+  onSelectAll,
   onUpdateObject,
   onVerifyField,
   onUpdateParameter,
@@ -270,6 +272,9 @@ const ObjectListView = ({
   sortDirection,
   onSort,
 }: ObjectListViewProps) => {
+  const allSelected = objects.length > 0 && objects.every((o) => selectedObjectIds?.has(o.id));
+  const someSelected = !allSelected && objects.some((o) => selectedObjectIds?.has(o.id));
+
   if (objects.length === 0) {
     return (
       <p className="text-xs px-4 py-3" style={{ color: 'var(--pw-text-tertiary)' }}>
@@ -280,7 +285,15 @@ const ObjectListView = ({
 
   return (
     <div style={{ position: 'relative', zIndex: 0 }}>
-      <ObjectListHeader showCheckbox={showCheckboxes} sortColumn={sortColumn} sortDirection={sortDirection} onSort={onSort} />
+      <ObjectListHeader
+        showCheckbox={showCheckboxes}
+        sortColumn={sortColumn}
+        sortDirection={sortDirection}
+        onSort={onSort}
+        onSelectAll={onSelectAll}
+        allSelected={allSelected}
+        someSelected={someSelected}
+      />
       {objects.map((obj) => {
         const isChecked = selectedObjectIds?.has(obj.id) ?? false;
         return (

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { ChevronDown, ChevronRight, ChevronUp } from 'lucide-react';
 import { InsuranceObject } from '@/data/mockOrgTree';
 import { getProgressFill } from './ProgressPill';
@@ -42,9 +42,20 @@ interface ObjectListHeaderProps {
   sortColumn?: SortColumn;
   sortDirection?: SortDirection;
   onSort?: (col: SortColumn) => void;
+  onSelectAll?: () => void;
+  allSelected?: boolean;
+  someSelected?: boolean;
 }
 
-export const ObjectListHeader = ({ showCheckbox, sortColumn, sortDirection, onSort }: ObjectListHeaderProps) => {
+export const ObjectListHeader = ({ showCheckbox, sortColumn, sortDirection, onSort, onSelectAll, allSelected, someSelected }: ObjectListHeaderProps) => {
+  const checkboxRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (checkboxRef.current) {
+      checkboxRef.current.indeterminate = !allSelected && !!someSelected;
+    }
+  }, [allSelected, someSelected]);
+
   const SortIcon = ({ col }: { col: SortColumn }) => {
     if (sortColumn !== col) return null;
     return sortDirection === 'asc'
@@ -66,7 +77,18 @@ export const ObjectListHeader = ({ showCheckbox, sortColumn, sortDirection, onSo
       className="flex items-center px-10 py-2"
       style={{ borderBottom: '1px solid var(--pw-border)', gap: '8px' }}
     >
-      <div style={{ width: CHECKBOX_COL, flexShrink: 0 }} />
+      <div style={{ width: CHECKBOX_COL, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+        {showCheckbox && onSelectAll && (
+          <input
+            ref={checkboxRef}
+            type="checkbox"
+            checked={!!allSelected}
+            onChange={() => {}}
+            onClick={(e) => { e.stopPropagation(); onSelectAll(); }}
+            style={{ cursor: 'pointer', accentColor: 'var(--pw-accent-red)', width: '14px', height: '14px' }}
+          />
+        )}
+      </div>
       <span
         className="text-xs"
         style={{ ...sortableStyle('type'), width: '140px', flexShrink: 0 }}

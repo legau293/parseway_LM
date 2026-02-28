@@ -393,6 +393,7 @@ const Workspace = () => {
 
   const subToolbarRef = useRef<HTMLDivElement>(null);
   const objToolbarRef = useRef<HTMLDivElement>(null);
+  const subSelectAllRef = useRef<HTMLInputElement>(null);
 
   const showToast = useCallback((msg: string) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -454,6 +455,15 @@ const Workspace = () => {
 
   const filteredSubsidiaries =
     rootCompany?.subsidiaries.filter((s) => !subSearch || s.name.toLowerCase().includes(subSearch.toLowerCase())) ?? [];
+
+  const subAllSelected = filteredSubsidiaries.length > 0 && filteredSubsidiaries.every((s) => selectedSubsidiaryIds.has(s.id));
+  const subSomeSelected = !subAllSelected && filteredSubsidiaries.some((s) => selectedSubsidiaryIds.has(s.id));
+
+  useEffect(() => {
+    if (subSelectAllRef.current) {
+      subSelectAllRef.current.indeterminate = !subAllSelected && subSomeSelected;
+    }
+  }, [subAllSelected, subSomeSelected]);
 
   const handleSelectRoot = (id: string) => {
     setSelectedRootId(id);
@@ -530,12 +540,24 @@ const Workspace = () => {
     });
   };
 
+  const handleSelectAllSubsidiaries = () => {
+    const ids = filteredSubsidiaries.map((s) => s.id);
+    const allChecked = ids.length > 0 && ids.every((id) => selectedSubsidiaryIds.has(id));
+    setSelectedSubsidiaryIds(allChecked ? new Set() : new Set(ids));
+  };
+
   const handleToggleObjectSelect = (id: string) => {
     setSelectedObjectIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
+  };
+
+  const handleSelectAllObjects = () => {
+    const ids = filteredObjects.map((o) => o.id);
+    const allChecked = ids.length > 0 && ids.every((id) => selectedObjectIds.has(id));
+    setSelectedObjectIds(allChecked ? new Set() : new Set(ids));
   };
 
   const handleBulkDelete = () => {
@@ -712,7 +734,16 @@ const Workspace = () => {
                 className="flex items-center px-10 py-1.5"
                 style={{ gap: '8px', borderBottom: '1px solid var(--pw-border)' }}
               >
-                <div style={{ width: '24px', flexShrink: 0 }} />
+                <div style={{ width: '24px', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+                  <input
+                    ref={subSelectAllRef}
+                    type="checkbox"
+                    checked={subAllSelected}
+                    onChange={() => {}}
+                    onClick={(e) => { e.stopPropagation(); handleSelectAllSubsidiaries(); }}
+                    style={{ cursor: 'pointer', accentColor: 'var(--pw-accent-red)', width: '14px', height: '14px' }}
+                  />
+                </div>
                 <span className="text-xs flex-1" style={{ color: 'var(--pw-text-tertiary)' }}>Namn</span>
                 <span className="text-xs" style={{ color: 'var(--pw-text-tertiary)', width: '140px', flexShrink: 0 }}>Färdigställt</span>
               </div>
@@ -807,6 +838,7 @@ const Workspace = () => {
               selectedObjectIds={selectedObjectIds}
               onToggleObject={handleToggleObject}
               onToggleObjectSelect={handleToggleObjectSelect}
+              onSelectAll={handleSelectAllObjects}
               onUpdateObject={handleUpdateObject}
               onVerifyField={handleVerifyField}
               onUpdateParameter={handleUpdateParameter}
@@ -897,6 +929,7 @@ const Workspace = () => {
               selectedObjectIds={selectedObjectIds}
               onToggleObject={handleToggleObject}
               onToggleObjectSelect={handleToggleObjectSelect}
+              onSelectAll={handleSelectAllObjects}
               onUpdateObject={handleUpdateObject}
               onVerifyField={handleVerifyField}
               onUpdateParameter={handleUpdateParameter}
